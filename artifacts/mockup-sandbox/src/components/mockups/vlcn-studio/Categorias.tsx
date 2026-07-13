@@ -74,7 +74,7 @@ const CATS = [
   },
   {
     id: 'otro',
-    label: 'OTRO',
+    label: '¡ELIGE TU PROPIO DISEÑO!',
     sub: 'Tu diseño · Tu idea · Sin límites',
     path: 'configurador',
     icon: Pencil,
