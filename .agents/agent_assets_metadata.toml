@@ -90,3 +90,33 @@ id = "Fc3TE0fstyeNmaPp7KRjL"
 uri = "file://attached_assets/generated_images/config-morado.jpg"
 type = "image"
 title = "Configurador — MORADO"
+
+[[outputs]]
+id = "PNkbqw9s0oSq1l7yxbuKr"
+uri = "file://artifacts/mockup-sandbox/public/generated_images/vlcn-shirt-rojo.png"
+type = "image"
+title = "Polera ROJO"
+
+[[outputs]]
+id = "9H38pRjJEwT8WdloScsZ9"
+uri = "file://artifacts/mockup-sandbox/public/generated_images/vlcn-shirt-azul.png"
+type = "image"
+title = "Polera AZUL"
+
+[[outputs]]
+id = "WIDmpKe_fE6gGz07Vd_2U"
+uri = "file://artifacts/mockup-sandbox/public/generated_images/vlcn-shirt-negro.png"
+type = "image"
+title = "Polera NEGRO"
+
+[[outputs]]
+id = "VIBP8fXM3n7vRDAxLEkaA"
+uri = "file://artifacts/mockup-sandbox/public/generated_images/vlcn-shirt-verde.png"
+type = "image"
+title = "Polera VERDE"
+
+[[outputs]]
+id = "NSjg2qenYxpbpNR9hHOHy"
+uri = "file://artifacts/mockup-sandbox/public/generated_images/vlcn-shirt-violeta.png"
+type = "image"
+title = "Polera VIOLETA"
