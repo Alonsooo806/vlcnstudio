@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ChevronRight, ChevronLeft, ArrowRight, ArrowLeft,
   CheckCircle2, Ruler, Droplets, Info, Plus, Minus,
@@ -66,6 +66,71 @@ const SHIPPING_TIERS = [
 ];
 
 const formatCLP = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
+
+// ---------- COLORIZACIÓN REALISTA POR CANVAS ----------
+// Discrimina píxeles neutros (camiseta) de píxeles cálidos/saturados (madera) por saturación HSV.
+// Solo los píxeles con baja saturación (<0.28) reciben el tinte via multiply.
+// El fondo de madera y cualquier elemento con color propio quedan completamente inalterados.
+const SHIRT_BASE_SRC = 'generated_images/vlcn-shirt-blanco.png';
+const _colorizeCache = new Map<string, string>(); // dataURL por hex — persiste entre renders
+
+async function colorizeShirt(colorHex: string): Promise<string> {
+  if (_colorizeCache.has(colorHex)) return _colorizeCache.get(colorHex)!;
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width  = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) { resolve(SHIRT_BASE_SRC); return; }
+      ctx.drawImage(img, 0, 0);
+
+      // Blanco: no requiere tinte — camiseta ya es blanca
+      if (colorHex === '#FFFFFF' || colorHex === '#ffffff') {
+        const url = canvas.toDataURL('image/jpeg', 0.92);
+        _colorizeCache.set(colorHex, url);
+        resolve(url);
+        return;
+      }
+
+      // Negro: usar casi-negro para preservar volumen 3D (no pitch-black total)
+      const effectiveHex = colorHex === '#000000' ? '#141414' : colorHex;
+      const cr = parseInt(effectiveHex.slice(1, 3), 16) / 255;
+      const cg = parseInt(effectiveHex.slice(3, 5), 16) / 255;
+      const cb = parseInt(effectiveHex.slice(5, 7), 16) / 255;
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue;          // transparente: skip
+        const pr = data[i], pg = data[i + 1], pb = data[i + 2];
+        const maxCh = Math.max(pr, pg, pb);
+        const minCh = Math.min(pr, pg, pb);
+        // Saturación HSV: 0 = neutro (gris/blanco = tela), 1 = muy saturado (madera/color)
+        const sat = maxCh === 0 ? 0 : (maxCh - minCh) / maxCh;
+
+        if (sat < 0.28) {
+          // Tela: aplicar multiply — preserva pliegues y sombras naturalmente
+          data[i]     = Math.round(pr * cr);
+          data[i + 1] = Math.round(pg * cg);
+          data[i + 2] = Math.round(pb * cb);
+        }
+        // else: pixel de fondo (madera, borde, etc.) — se conserva sin modificación
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      const url = canvas.toDataURL('image/jpeg', 0.92);
+      _colorizeCache.set(colorHex, url);
+      resolve(url);
+    };
+    img.onerror = () => resolve(SHIRT_BASE_SRC);
+    img.src = SHIRT_BASE_SRC;
+  });
+}
+// -------------------------------------------------------
 
 const getShippingCost = (qty: number) => {
   const tier = SHIPPING_TIERS.find(t => qty >= t.min && qty <= t.max);
@@ -139,6 +204,25 @@ export default function ConfiguradorPremium() {
 
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
   const [colorActivelyChosen, setColorActivelyChosen] = useState(false);
+
+  // Mapa hex → dataURL de la camiseta coloreada por canvas
+  const [colorizedUrls, setColorizedUrls] = useState<Record<string, string>>({});
+
+  // Pre-computa todos los colores en segundo plano al montar
+  useEffect(() => {
+    let cancelled = false;
+    const preload = async () => {
+      for (const c of COLORS) {
+        if (cancelled) break;
+        const url = await colorizeShirt(c.hex);
+        if (!cancelled) {
+          setColorizedUrls(prev => prev[c.hex] ? prev : { ...prev, [c.hex]: url });
+        }
+      }
+    };
+    preload();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleDesignUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -292,22 +376,14 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedBase(b.id); setShowColorConfig(b.id === 'tee'); } }}
                       className={`group text-left relative border p-4 transition-all duration-300 cursor-pointer ${selectedBase === b.id ? 'border-accent ring-1 ring-accent' : 'border-border hover:border-foreground/50'}`}
                     >
-                      <div className="aspect-square bg-white mb-4 overflow-hidden relative isolate">
+                      <div className="aspect-square bg-white mb-4 overflow-hidden relative">
                         {b.id === 'tee' ? (
                           <>
-                            {/* Base blanca con textura real de tejido */}
+                            {/* Camiseta coloreada por canvas — solo tela, fondo inalterado */}
                             <img
-                              src={`generated_images/vlcn-shirt-blanco.png`}
+                              src={colorizedUrls[currentColor.hex] ?? SHIRT_BASE_SRC}
                               alt={`${b.name} - ${currentColor.name}`}
-                              className={`w-full h-full object-contain relative z-10 transition-transform duration-700 ${selectedBase === b.id ? 'scale-105' : 'group-hover:scale-110'}`}
-                            />
-                            {/* Capa de color en tiempo real — multiply preserva pliegues y sombras */}
-                            <div
-                              className="absolute inset-0 z-10 pointer-events-none transition-colors duration-150"
-                              style={{
-                                backgroundColor: currentColor.hex === '#000000' ? '#111111' : currentColor.hex,
-                                mixBlendMode: 'multiply',
-                              }}
+                              className={`w-full h-full object-contain transition-transform duration-700 ${selectedBase === b.id ? 'scale-105' : 'group-hover:scale-110'}`}
                             />
                             <button
                               onClick={(e) => { e.stopPropagation(); nextColor(); }}
@@ -512,24 +588,17 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           {showColorConfig && (
           <section className="p-6 md:p-12 border-b border-border/40 bg-[#FAFAFA]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              {/* High Fidelity Viewer — renderizado en tiempo real por mix-blend-mode */}
-              <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair isolate">
+              {/* High Fidelity Viewer — tinte canvas: solo tela, fondo de madera inalterado */}
+              <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair">
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                   <div className="bg-background/80 backdrop-blur font-mono text-[10px] px-3 py-1 border border-border">INSPECCIÓN X-RAY</div>
                 </div>
-                {/* Base: camisa blanca con textura, pliegues y costuras visibles */}
-                <img 
-                  src={`generated_images/vlcn-shirt-blanco.png`}
-                  alt={`Vista Detallada - ${previewColor.name}`} 
-                  className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-[1.35] origin-center relative z-10"
-                />
-                {/* Capa de color — multiply preserva sombras y pliegues del tejido */}
-                <div
-                  className="absolute inset-0 z-10 pointer-events-none transition-colors duration-150"
-                  style={{
-                    backgroundColor: previewColor.hex === '#000000' ? '#111111' : previewColor.hex,
-                    mixBlendMode: 'multiply',
-                  }}
+                {/* Camiseta coloreada selectivamente por canvas — pliegues y sombras preservados */}
+                <img
+                  key={previewColor.hex}
+                  src={colorizedUrls[previewColor.hex] ?? SHIRT_BASE_SRC}
+                  alt={`Vista Detallada - ${previewColor.name}`}
+                  className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-[1.35] origin-center"
                 />
               </div>
 

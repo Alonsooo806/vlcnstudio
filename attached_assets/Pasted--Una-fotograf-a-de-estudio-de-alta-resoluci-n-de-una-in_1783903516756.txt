@@ -1,0 +1,19 @@
+"Una fotografía de estudio de alta resolución de una interfaz de producto para la venta de ropa online, basada en la estructura y el texto en español de image_20.png. En el centro, dentro del marco fotográfico, se encuentra la camiseta de algodón de manga corta (con sus pliegues y sombras fotorrealistas) centrada sobre el fondo de madera rústica.
+
+La variable de color es la siguiente: Toda la tela de la camiseta en el centro está teñida de un color [INSERTAR AQUÍ: NEGRO / BLANCO / ROJO / NARANJO / AMARILLO / VERDE / AZUL / VIOLETA].
+
+Es imperativo que el tinte sea profundo y realista, conservando todas las sombras y pliegues naturales de la tela, dándole un volumen tridimensional. El fondo de madera rústica y los márgenes de color naranja brillante que rodean la foto deben permanecer completamente inalterados y estáticos, sin teñirse del color de la prenda.
+
+A la derecha, el panel de interfaz de usuario (texto, especificaciones, botones de talla) está nítido y limpio. En la sección 'ELIGE TU COLOR', la muestra correspondiente al color seleccionado ([COLOR A ELEGIR]) está activa y resaltada. La etiqueta de texto debajo muestra: 'COLOR: [COLOR A ELEGIR EN MAYÚSCULAS]'. El encuadre es profesional y equilibrado."
+
+Cómo usar este template para generar cada color (Instrucciones):
+Para obtener el resultado para cada color específico, simplemente reemplaza [INSERTAR AQUÍ...] con el color que deseas. Aquí te doy los ejemplos de cómo quedaría el prompt para los extremos que pediste:
+
+1. Para generar la vista en NEGRO:
+"...La variable de color es la siguiente: Toda la tela de la camiseta en el centro está teñida de un color NEGRO PROFUNDO. [...] La muestra correspondiente al color seleccionado (NEGRO) está activa y resaltada. La etiqueta de texto debajo muestra: 'COLOR: NEGRO'."
+
+2. Para generar la vista en BLANCO:
+"...La variable de color es la siguiente: Toda la tela de la camiseta en el centro está teñida de un color BLANCO PURO. [...] La muestra correspondiente al color seleccionado (BLANCO) está activa y resaltada. La etiqueta de texto debajo muestra: 'COLOR: BLANCO'."
+
+3. Para generar la vista en VIOLETA (ejemplo):
+"...La variable de color es la siguiente: Toda la tela de la camiseta en el centro está teñida de un color VIOLETA INTENSO. [...] La muestra correspondiente al color seleccionado (VIOLETA) está activa y resaltada. La etiqueta de texto debajo muestra: 'COLOR: VIOLETA'."
