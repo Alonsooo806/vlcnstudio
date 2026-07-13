@@ -156,12 +156,13 @@ const getShippingCost = (qty: number) => {
 const SIZES = ['S', 'M', 'L', 'XL', '2XL'];
 
 // Tabla de Escalamiento de Estampado (ancho x alto en cm sobre la prenda)
-const PRINT_DIMENSIONS_BY_TALLA: Record<string, { w: number; h: number }> = {
-  S: { w: 25, h: 35 },
-  M: { w: 27, h: 37 },
-  L: { w: 29, h: 39 },
-  XL: { w: 31, h: 41 },
-  '2XL': { w: 33, h: 43 },
+// Valores físicos reales según estándar americano (especificación oficial VLCN Studio)
+const PRINT_DIMENSIONS_BY_TALLA: Record<string, { w: number; h: number; requiresA3?: boolean }> = {
+  S:    { w: 25, h: 35 },
+  M:    { w: 28, h: 38 },
+  L:    { w: 30, h: 40 },
+  XL:   { w: 32, h: 42, requiresA3: true },
+  '2XL':{ w: 35, h: 45, requiresA3: true },
 };
 const PRINT_SIZE_BY_TALLA: Record<string, string> = Object.fromEntries(
   Object.entries(PRINT_DIMENSIONS_BY_TALLA).map(([k, { w, h }]) => [k, `${w} × ${h} cm`])
@@ -220,6 +221,7 @@ export default function ConfiguradorPremium() {
 
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
   const [colorActivelyChosen, setColorActivelyChosen] = useState(false);
+  const [showScaleModal, setShowScaleModal] = useState(false);
 
   // Mapa hex → dataURL de la camiseta coloreada por canvas
   const [colorizedUrls, setColorizedUrls] = useState<Record<string, string>>({});
@@ -401,8 +403,8 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       key={b.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => { setSelectedBase(b.id); setShowColorConfig(b.id === 'tee'); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedBase(b.id); setShowColorConfig(b.id === 'tee'); } }}
+                      onClick={() => { setSelectedBase(b.id); setShowColorConfig(true); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedBase(b.id); setShowColorConfig(true); } }}
                       className={`group text-left relative border p-4 transition-all duration-300 cursor-pointer ${selectedBase === b.id ? 'border-accent ring-1 ring-accent' : 'border-border hover:border-foreground/50'}`}
                     >
                       <div className="aspect-square bg-white mb-4 overflow-hidden relative">
@@ -678,9 +680,9 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           {showColorConfig && (
           <section className="p-6 md:p-12 border-b border-border/40 bg-[#FAFAFA]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              {/* High Fidelity Viewer — crossfade fotorrealista entre colores */}
+              {/* High Fidelity Viewer — crossfade fotorrealista entre colores + overlay de diseño */}
               <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair">
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-none">
                   <div className="bg-background/80 backdrop-blur font-mono text-[10px] px-3 py-1 border border-border">INSPECCIÓN X-RAY</div>
                 </div>
                 {/* Todas las imágenes apiladas — crossfade suave al cambiar color */}
@@ -694,6 +696,47 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     }`}
                   />
                 ))}
+
+                {/* ── OVERLAY DE DISEÑO ESTAMPADO ──────────────────────────────────
+                    Solo aparece tras subir un archivo. Se posiciona sobre el pecho
+                    del maniquí, centrado, escalado a las medidas físicas de la talla.
+                    Los cambios de color de la prenda no afectan este layer. */}
+                {uploadedDesign ? (
+                  <div
+                    className="absolute z-20 transition-all duration-300 pointer-events-none"
+                    style={{
+                      width: `${printWidthPercent}%`,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      top: '24%',   // posición del pecho en el encuadre del maniquí
+                    }}
+                  >
+                    {/* El padding-bottom define la altura proporcional a las medidas físicas */}
+                    <div
+                      style={{
+                        width: '100%',
+                        paddingBottom: `${(PRINT_DIMENSIONS_BY_TALLA[size].h / PRINT_DIMENSIONS_BY_TALLA[size].w) * 100}%`,
+                        position: 'relative',
+                      }}
+                    >
+                      <img
+                        src={uploadedDesign}
+                        alt="Tu diseño estampado"
+                        className="absolute inset-0 w-full h-full object-contain drop-shadow-sm"
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
+                ) : selectedBase === 'longsleeve' ? (
+                  /* Placeholder visible cuando se eligió "SUBE TU DISEÑO" pero aún no se subió */
+                  <div className="absolute z-20 inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="bg-black/60 text-white font-mono text-[11px] px-4 py-2 rounded text-center leading-relaxed">
+                      <Upload className="w-5 h-5 mx-auto mb-1 opacity-80" />
+                      SUBE TU DISEÑO<br />para previsualizar el estampado
+                    </div>
+                  </div>
+                ) : null}
+                {/* ────────────────────────────────────────────────────────────── */}
               </div>
 
               {/* Technical Specs & Sizing */}
@@ -799,8 +842,11 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-4">
                     <h4 className="font-mono text-xs font-bold">SELECCIÓN DE TALLA (EU)</h4>
-                    <button className="flex items-center gap-1 font-mono text-[10px] text-accent hover:underline">
-                      <Ruler className="w-3 h-3" /> VER TABLA COMPARATIVA
+                    <button
+                      onClick={() => setShowScaleModal(true)}
+                      className="flex items-center gap-1 font-mono text-[10px] text-accent hover:underline"
+                    >
+                      <Ruler className="w-3 h-3" /> VER DETALLE DE ESCALA
                     </button>
                   </div>
                   <div className="flex gap-2">
@@ -820,8 +866,15 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       TALLA {size} — MEDIDA DEL ESTAMPADO{isPechoLogoFijo ? ' (pecho)' : ''}: <span className="font-bold text-foreground">{printMeasure}</span>
                     </span>
                   </div>
+                  {/* Nota A3 para tallas XL y 2XL */}
+                  {PRINT_DIMENSIONS_BY_TALLA[size]?.requiresA3 && (
+                    <div className="mt-2 flex items-start gap-2 p-2 border border-accent/30 bg-accent/5 font-mono text-[10px] text-accent">
+                      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>Talla {size}: requiere plancha A3 o superior para producción. Consulta disponibilidad con el taller.</span>
+                    </div>
+                  )}
                   <div className="mt-2 font-mono text-[10px] text-muted-foreground/80 leading-relaxed">
-                    Talla S: 25 × 35 cm (prenda 50cm) · Talla M: 27 × 37 cm (52cm) · Talla L: 29 × 39 cm (54cm) · Talla XL: 31 × 41 cm (57cm) · Talla 2XL: 33 × 43 cm (60cm) · Logotipos (pecho): 10 × 10 cm
+                    S: 25×35 cm · M: 28×38 cm · L: 30×40 cm · XL: 32×42 cm · 2XL: 35×45 cm · Logo pecho: 10×10 cm
                   </div>
                   <div className="mt-1 font-mono text-[10px] text-muted-foreground/60 leading-relaxed">
                     El estampado ocupa ~{printWidthRatioPct.toFixed(0)}% del ancho de la prenda en talla {size} — proporción constante en todas las tallas, con margen libre a cada costura.
@@ -1117,6 +1170,100 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               <p className="text-center font-mono text-[10px] text-muted-foreground">
                 alonsoovalentino@gmail.com
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DETALLE DE ESCALA POR TALLA */}
+      {showScaleModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowScaleModal(false)} />
+          <div className="relative bg-background border border-border w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Ruler className="w-5 h-5 text-accent shrink-0" />
+                <div>
+                  <h3 className="font-mono font-bold text-sm uppercase tracking-widest leading-none">Detalle de Escala de Estampado</h3>
+                  <p className="text-[11px] text-muted-foreground mt-1">Medidas físicas reales sobre la prenda · Estándar americano (cm)</p>
+                </div>
+              </div>
+              <button onClick={() => setShowScaleModal(false)} className="text-muted-foreground hover:text-foreground ml-4 shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Diagrama visual de barras proporcionales */}
+              <div className="space-y-3">
+                {SIZES.map(s => {
+                  const dims = PRINT_DIMENSIONS_BY_TALLA[s];
+                  const isActive = s === size;
+                  // Ancho relativo: 2XL = 100%, S proporcional
+                  const maxW = PRINT_DIMENSIONS_BY_TALLA['2XL'].w;
+                  const barW = (dims.w / maxW) * 100;
+                  return (
+                    <div key={s}>
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className={`font-mono text-xs w-8 shrink-0 font-bold ${isActive ? 'text-accent' : 'text-muted-foreground'}`}>{s}</span>
+                        {/* Barra proporcional al ancho físico */}
+                        <div className="flex-1 bg-muted h-8 relative overflow-hidden border border-border/40">
+                          <div
+                            className={`h-full flex items-center justify-end pr-2 transition-all duration-300 ${isActive ? 'bg-accent text-white' : 'bg-foreground/15 text-foreground'}`}
+                            style={{ width: `${barW}%` }}
+                          >
+                            <span className="font-mono text-[10px] font-bold whitespace-nowrap">{dims.w}×{dims.h} cm</span>
+                          </div>
+                        </div>
+                        {dims.requiresA3 && (
+                          <span className="font-mono text-[9px] text-accent border border-accent/40 px-1.5 py-0.5 shrink-0">A3</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Leyenda */}
+              <div className="border-t border-border pt-4 space-y-2">
+                <div className="flex items-start gap-2 font-mono text-[10px] text-muted-foreground">
+                  <Info className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                  <span>El estampado crece en medidas absolutas con cada talla, pero mantiene siempre la misma proporción visual relativa a la prenda (~50–55% del ancho del pecho).</span>
+                </div>
+                <div className="flex items-start gap-2 font-mono text-[10px] text-muted-foreground">
+                  <span className="font-bold text-accent shrink-0">A3</span>
+                  <span>Tallas XL y 2XL requieren plancha de transferencia A3 o superior. Consulta disponibilidad con el taller antes de confirmar el pedido.</span>
+                </div>
+                <div className="flex items-start gap-2 font-mono text-[10px] text-muted-foreground">
+                  <span className="font-bold text-foreground shrink-0">Logo</span>
+                  <span>Logotipos o gráficos pequeños en zona pecho (sin diseño subido): medida fija 10×10 cm en todas las tallas.</span>
+                </div>
+              </div>
+
+              {/* Talla actualmente seleccionada */}
+              <div className={`p-4 border-2 border-accent bg-accent/5`}>
+                <p className="font-mono text-[10px] text-muted-foreground mb-1 uppercase tracking-widest">Tu talla seleccionada</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-2xl font-bold text-accent">{size}</span>
+                  <div className="text-right">
+                    <p className="font-mono text-lg font-bold text-foreground">{PRINT_DIMENSIONS_BY_TALLA[size].w} × {PRINT_DIMENSIONS_BY_TALLA[size].h} cm</p>
+                    <p className="font-mono text-[10px] text-muted-foreground">ancho × alto de estampado</p>
+                  </div>
+                </div>
+                {PRINT_DIMENSIONS_BY_TALLA[size]?.requiresA3 && (
+                  <p className="mt-2 font-mono text-[10px] text-accent flex items-center gap-1.5">
+                    <Info className="w-3 h-3" /> Esta talla requiere plancha A3 o superior
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => setShowScaleModal(false)}
+                className="w-full bg-foreground text-background font-mono text-sm py-3 hover:bg-accent transition-colors"
+              >
+                CERRAR
+              </button>
             </div>
           </div>
         </div>

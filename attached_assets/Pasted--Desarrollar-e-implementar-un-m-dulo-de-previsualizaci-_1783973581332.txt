@@ -1,0 +1,41 @@
+"Desarrollar e implementar un módulo de previsualización de diseño ('mockup') para una interfaz de comercio electrónico de personalización de ropa, basada en la estructura de ESPECIFICACIONES
+
+
+
+
+
+
+
+Flujo de Activación: La previsualización del estampado (área grande) solo debe aparecer en el maniquí una vez que el usuario haya interactuado con el botón 'SUBE TU DISEÑO' y cargado exitosamente un archivo. Antes de esto, el maniquí debe mostrar la polera lisa o con un marcador de posición ('placeholder').
+
+
+
+Lógica de Escalado Físico (Medidas Reales): Al cargar el diseño, el sistema debe renderizarlo en el pecho del maniquí ajustado a una escala proporcional a medidas físicas reales en centímetros (estándar americano). El tamaño del contenedor del diseño debe cambiar dinámicamente al seleccionar una talla (S, M, L, XL, 2XL) en el resumen lateral. Esta relación es la siguiente:
+
+
+
+Talla S: El diseño se muestra a escala de 25 cm (ancho) x 35 cm (alto). Ocupa una porción significativa del pecho de la polera pequeña.
+
+
+
+Talla M: El diseño se muestra a escala de 28 cm (ancho) x 38 cm (alto).
+
+
+
+Talla L: El diseño se muestra a escala de 30 cm (ancho) x 40 cm (alto).
+
+
+
+Talla XL: El diseño se muestra a escala de 32 cm (ancho) x 42 cm (alto). (Nota: para esta talla, se debe indicar en el backend que requiere una plancha A3 o superior para la producción).
+
+
+
+Talla 2XL: El diseño se muestra a escala de 35 cm (ancho) x 45 cm (alto). El diseño es físicamente más grande que en S, pero proporcionalmente realista para la polera grande.
+
+
+
+Consistencia: Independientemente de la talla, el diseño debe mantener su posición centrada, su fidelidad de color y su nitidez, actuando como una capa superior fotorrealista sobre la tela. Los cambios de color de la prenda no deben afectar la visualización del diseño.
+
+
+
+Interfaz de Usuario (UX): Actualizar el enlace 'Ver detalle de escala' en la sección 'SELECCIÓN' para que, al hacer clic, muestre un diagrama visual o una ventana emergente que explique estas diferencias de tamaño en cm para la talla seleccionada."
