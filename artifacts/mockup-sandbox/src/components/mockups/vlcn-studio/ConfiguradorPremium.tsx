@@ -11,7 +11,7 @@ const BASES = [
   { 
     id: 'tee', 
     name: 'CAMISETA MANGA CORTA', 
-    price: 4000, 
+    price: 5000, 
     specs: '100% Algodón Peinado, 220 g/m²', 
     fitLabel: 'TALLA: S, M, L, XL, 2XL',
     img: `generated_images/vlcn-emerald-card-white.png` 
@@ -43,9 +43,9 @@ const PRINTS = [
 ];
 
 const PLACEMENTS = [
-  { id: 'pecho',   name: 'PECHO',   price: 6000, desc: 'Estampado frontal centrado sobre pecho' },
-  { id: 'espalda', name: 'ESPALDA', price: 2000, desc: 'Estampado dorsal de gran formato' },
-  { id: 'manga',   name: 'MANGA',   price: 1000, desc: 'Estampado lateral en manga derecha' },
+  { id: 'pecho',   name: 'PECHO',   price: 10000, desc: 'Estampado frontal centrado sobre pecho' },
+  { id: 'espalda', name: 'ESPALDA', price: 4000,  desc: 'Estampado dorsal de gran formato' },
+  { id: 'manga',   name: 'MANGA',   price: 2000,  desc: 'Estampado lateral en manga derecha' },
 ];
 
 const DELIVERY_COST = 2000; // CLP — costo fijo de delivery a domicilio en Temuco
