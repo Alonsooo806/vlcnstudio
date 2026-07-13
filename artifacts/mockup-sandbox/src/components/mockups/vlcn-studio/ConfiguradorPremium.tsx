@@ -708,7 +708,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       width: `${printWidthPercent}%`,
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      top: '24%',   // posición del pecho en el encuadre del maniquí
+                      top: '38%',   // posición del pecho en el encuadre del maniquí
                     }}
                   >
                     {/* El padding-bottom define la altura proporcional a las medidas físicas */}
