@@ -843,7 +843,23 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     El estampado ocupa ~{printWidthRatioPct.toFixed(0)}% del ancho de la prenda en talla {size} — proporción constante en todas las tallas, con margen libre a cada costura.
                   </div>
                 </div>
-                
+
+                {/* NAVEGACIÓN DE RETORNO */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/40">
+                  <button
+                    onClick={() => { window.location.href = `${import.meta.env.BASE_URL}categorias`; }}
+                    className="flex-1 flex items-center justify-center gap-2 border border-border py-3 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors"
+                  >
+                    ← VOLVER A CATEGORÍAS
+                  </button>
+                  <button
+                    onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-foreground text-background py-3 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors"
+                  >
+                    ⌂ IR AL INICIO
+                  </button>
+                </div>
+
               </div>
             </div>
           </section>
