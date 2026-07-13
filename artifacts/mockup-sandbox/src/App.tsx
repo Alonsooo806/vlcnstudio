@@ -3,6 +3,7 @@ import { useEffect, useState, type ComponentType } from "react";
 import { modules as discoveredModules } from "./.generated/mockup-components";
 import Inicio from "./components/mockups/vlcn-studio/Inicio";
 import ConfiguradorPremium from "./components/mockups/vlcn-studio/ConfiguradorPremium";
+import ChatWidget from "./components/mockups/vlcn-studio/ChatWidget";
 
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 
@@ -160,8 +161,8 @@ function App() {
   // product configurator (both existing mockup components, wired up as the
   // real site routes for a standalone deployment).
   const siteRoute = getSiteRoute();
-  if (siteRoute === "home") return <Inicio />;
-  if (siteRoute === "configurador") return <ConfiguradorPremium />;
+  if (siteRoute === "home") return <><Inicio /><ChatWidget /></>;
+  if (siteRoute === "configurador") return <><ConfiguradorPremium /><ChatWidget /></>;
 
   return <Gallery />;
 }
