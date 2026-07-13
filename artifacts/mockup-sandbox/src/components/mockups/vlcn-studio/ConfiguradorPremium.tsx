@@ -272,25 +272,23 @@ export default function ConfiguradorPremium() {
   };
 
   const handleGmailSend = () => {
-    const subject = encodeURIComponent('Envía tu diseño, petición o idea');
+    const subject = encodeURIComponent('Solicitud de diseño asistido');
     const body = encodeURIComponent(
 `Hola VLCN STUDIO 👋
 
-Quiero hacer una solicitud de diseño asistido para mi camiseta personalizada.
+Quiero realizar una solicitud para mi camiseta personalizada.
 
-🎨 COLOR ELEGIDO: ${currentColor.name}
+🎨 COLOR: ${currentColor.name}
 📐 TALLA: ${size}
 📦 CANTIDAD: ${quantity}
 
---- MI DESCRIPCIÓN / IDEA / PETICIÓN ---
-(Describe aquí tu diseño, personaje, logo, idea, colores, estilo, referencias, etc. Mientras más detalles, mejor resultado.)
+--- DESCRIPCIÓN DE LA IDEA ---
+(Describe tu idea, logo o referencias aquí)
 
-
-
---- DETALLES TÉCNICOS ADICIONALES ---
-Ubicación de impresión preferida: 
-Fecha límite: 
-Uso: Personal / Regalo / Merchandising
+--- DETALLES TÉCNICOS ---
+Ubicación: ${placement.name}
+Fecha límite:
+Uso:
 
 Gracias!`
     );
@@ -605,35 +603,48 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               {/* Technical Specs & Sizing */}
               <div>
                 {/* === BOTÓN GMAIL — solo para Camiseta Manga Corta === */}
-                <div className={`mb-8 transition-all duration-300 ${colorActivelyChosen ? 'opacity-100' : 'opacity-70'}`}>
-                  <button
-                    onClick={() => setGmailModalOpen(true)}
-                    className={`w-full flex items-center justify-between gap-4 px-6 py-5 font-mono text-sm uppercase tracking-widest transition-all duration-200 group
-                      ${colorActivelyChosen
-                        ? 'bg-accent text-white hover:bg-accent/90 shadow-lg shadow-accent/20'
-                        : 'bg-foreground text-background hover:bg-accent hover:text-white'
-                      }`}
-                    aria-label="Enviar especificaciones por Gmail"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 shrink-0" />
-                      <span className="text-left leading-tight">
+                {/* ── CTA DISEÑO ASISTIDO ─────────────────────────────── */}
+                <div className="mb-8">
+                  {!colorActivelyChosen ? (
+                    /* Estado bloqueado: el usuario aún no eligió color */
+                    <div className="border-2 border-dashed border-border p-5 text-center space-y-3">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mx-auto">
+                        <Mail className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
                         Enviar especificaciones por Gmail
-                        {!colorActivelyChosen && (
-                          <span className="block text-[10px] opacity-70 font-normal normal-case tracking-normal mt-0.5">
-                            Elige tu color abajo y luego pulsa aquí
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                    <Send className="w-4 h-4 shrink-0 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </button>
-                  {colorActivelyChosen && (
-                    <p className="font-mono text-[10px] text-accent mt-2 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3 h-3" /> Color confirmado: {currentColor.name} · Pulsa el botón para describir tu diseño
-                    </p>
+                      </p>
+                      <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
+                        Elige tu color en la sección de abajo<br />para habilitar este botón.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 font-mono text-[10px] text-muted-foreground/60">
+                        <span className="w-6 h-px bg-border" />
+                        Paso 1: Color → Paso 2: Enviar
+                        <span className="w-6 h-px bg-border" />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Estado activo: color elegido */
+                    <>
+                      <button
+                        onClick={() => setGmailModalOpen(true)}
+                        className="w-full flex items-center justify-between gap-4 px-6 py-5 font-mono text-sm uppercase tracking-widest bg-accent text-white hover:bg-accent/90 shadow-lg shadow-accent/20 transition-all duration-200 group"
+                        aria-label="Enviar especificaciones por Gmail"
+                      >
+                        <span className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 shrink-0" />
+                          Enviar especificaciones por Gmail
+                        </span>
+                        <Send className="w-4 h-4 shrink-0 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      </button>
+                      <p className="font-mono text-[10px] text-accent mt-2 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Color confirmado: <strong>{currentColor.name}</strong> · Pulsa para describir tu diseño
+                      </p>
+                    </>
                   )}
                 </div>
+                {/* ─────────────────────────────────────────────────────── */}
 
                 <h2 className="text-3xl font-bold tracking-tighter uppercase mb-8">Especificaciones</h2>
                 
@@ -918,77 +929,73 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
         <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-foreground text-background text-xs font-mono px-3 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded">Asesoría Directa</span>
       </button>
 
-      {/* GMAIL ESPECIFICACIONES MODAL — solo Camiseta Manga Corta */}
+      {/* GMAIL ESPECIFICACIONES MODAL — Camiseta Manga Corta · Diseño asistido por texto */}
       {gmailModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setGmailModalOpen(false)}></div>
-          
-          <div className="relative bg-background border border-border w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-border flex justify-between items-center bg-accent text-white">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setGmailModalOpen(false)} />
+
+          <div className="relative bg-background border border-border w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-accent text-white">
               <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5" />
+                <Mail className="w-5 h-5 shrink-0" />
                 <div>
-                  <h3 className="font-mono font-bold text-sm uppercase tracking-widest">Diseño Asistido por Correo</h3>
-                  <p className="text-[11px] opacity-80 mt-0.5">Camiseta Manga Corta — Servicio exclusivo por texto</p>
+                  <h3 className="font-mono font-bold text-sm uppercase tracking-widest leading-none">Diseño asistido por correo</h3>
+                  <p className="text-[11px] opacity-75 mt-1">Exclusivo para solicitudes de diseño asistido · Sin subir archivos</p>
                 </div>
               </div>
-              <button onClick={() => setGmailModalOpen(false)} className="opacity-80 hover:opacity-100 transition-opacity">
+              <button onClick={() => setGmailModalOpen(false)} className="opacity-70 hover:opacity-100 transition-opacity ml-4 shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="bg-muted border border-border/60 p-4 space-y-2">
-                <h4 className="font-mono text-xs font-bold uppercase">Tu selección actual</h4>
-                <div className="grid grid-cols-3 gap-3 mt-3">
+
+            <div className="p-6 space-y-5">
+              {/* Resumen de selección */}
+              <div className="bg-muted border border-border/50 p-4">
+                <p className="font-mono text-[10px] text-muted-foreground mb-3 uppercase tracking-widest">Tu selección</p>
+                <div className="grid grid-cols-3 gap-3">
                   <div className="text-center">
-                    <div className="w-10 h-10 rounded-full mx-auto mb-1 border-2 border-accent" style={{ backgroundColor: currentColor.hex }}></div>
+                    <div
+                      className="w-9 h-9 rounded-full mx-auto mb-1.5 border-2 border-accent shadow-sm"
+                      style={{ backgroundColor: currentColor.hex === '#FFFFFF' ? '#f3f4f6' : currentColor.hex }}
+                    />
                     <p className="font-mono text-[10px] text-muted-foreground">COLOR</p>
-                    <p className="font-mono text-xs font-bold">{currentColor.name}</p>
+                    <p className="font-mono text-[11px] font-bold">{currentColor.name}</p>
                   </div>
                   <div className="text-center">
-                    <div className="w-10 h-10 rounded-full mx-auto mb-1 border-2 border-border bg-muted flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full mx-auto mb-1.5 border-2 border-border bg-background flex items-center justify-center">
                       <span className="font-mono text-sm font-bold">{size}</span>
                     </div>
                     <p className="font-mono text-[10px] text-muted-foreground">TALLA</p>
-                    <p className="font-mono text-xs font-bold">{size}</p>
+                    <p className="font-mono text-[11px] font-bold">{size}</p>
                   </div>
                   <div className="text-center">
-                    <div className="w-10 h-10 rounded-full mx-auto mb-1 border-2 border-border bg-muted flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full mx-auto mb-1.5 border-2 border-border bg-background flex items-center justify-center">
                       <span className="font-mono text-sm font-bold">{quantity}</span>
                     </div>
                     <p className="font-mono text-[10px] text-muted-foreground">CANTIDAD</p>
-                    <p className="font-mono text-xs font-bold">{quantity} ud.</p>
+                    <p className="font-mono text-[11px] font-bold">{quantity} ud.</p>
                   </div>
                 </div>
               </div>
 
+              {/* Pasos */}
               <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-accent/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="font-mono text-xs font-bold text-accent">1</span>
+                {[
+                  { n: '1', text: <>Se abrirá tu correo con el asunto <strong className="text-foreground">"Solicitud de diseño asistido"</strong> y tus datos pre-cargados.</> },
+                  { n: '2', text: 'Describe tu idea en palabras: logo, personaje, frase, estilo, colores, referencias, etc.' },
+                  { n: '3', text: 'Nuestro equipo te responde con un boceto previo. Sin subir archivos, sin formularios.' },
+                ].map(({ n, text }) => (
+                  <div key={n} className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="font-mono text-xs font-bold text-accent">{n}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-snug">{text}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">Se abrirá tu app de correo con el asunto <strong className="text-foreground">"Envía tu diseño, petición o idea"</strong> y tu configuración pre-cargada.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-accent/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="font-mono text-xs font-bold text-accent">2</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Describe tu diseño en palabras: personaje, logo, frase, estilo, referencias visuales, colores, etc.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-accent/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="font-mono text-xs font-bold text-accent">3</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Nuestro equipo te responde con un boceto previo antes de proceder. Sin subir archivos.</p>
-                </div>
+                ))}
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 p-3 rounded flex items-start gap-2">
-                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-800">Este canal es <strong>exclusivo para diseño asistido por texto y correo</strong>. Si ya tienes tu archivo listo, usa la opción <em>"Explica tu idea al correo!"</em> en el paso 1.</p>
-              </div>
-
+              {/* CTA */}
               <button
                 onClick={handleGmailSend}
                 className="w-full bg-accent text-white font-mono text-sm py-4 px-6 uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-accent/90 transition-colors group"
@@ -998,7 +1005,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
               <p className="text-center font-mono text-[10px] text-muted-foreground">
-                Correo: alonsoovalentino@gmail.com
+                alonsoovalentino@gmail.com
               </p>
             </div>
           </div>
