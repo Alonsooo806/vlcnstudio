@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "EvTqMzG95LC8Vz3VVI9BX"
+uri = "file://attached_assets/generated_images/configurador-rojo.jpg"
+type = "image"
+title = "Configurador — ROJO"
+
+[[outputs]]
+id = "FVxrSbo8ezL5guw-5g_pD"
+uri = "file://attached_assets/generated_images/configurador-naranja.jpg"
+type = "image"
+title = "Configurador — NARANJA"
+
+[[outputs]]
+id = "si22Ds_a3htmNm7kS30Mi"
+uri = "file://attached_assets/generated_images/configurador-amarillo.jpg"
+type = "image"
+title = "Configurador — AMARILLO"
+
+[[outputs]]
+id = "lSDClE3ZkHp8j0MH6Raao"
+uri = "file://attached_assets/generated_images/configurador-verde.jpg"
+type = "image"
+title = "Configurador — VERDE"
+
+[[outputs]]
+id = "9dwJRhVxmTFo8w8lB3CSm"
+uri = "file://attached_assets/generated_images/configurador-cian.jpg"
+type = "image"
+title = "Configurador — CIAN"
+
+[[outputs]]
+id = "9Vh37QJ_rnF0oIA8Ym_Db"
+uri = "file://attached_assets/generated_images/configurador-azul.jpg"
+type = "image"
+title = "Configurador — AZUL"
+
+[[outputs]]
+id = "f4s3Hxdak8gjNwuoLOmjp"
+uri = "file://attached_assets/generated_images/configurador-violeta.jpg"
+type = "image"
+title = "Configurador — VIOLETA"
