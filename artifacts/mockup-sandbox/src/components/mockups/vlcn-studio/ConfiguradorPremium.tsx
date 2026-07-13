@@ -331,6 +331,22 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
         </div>
       </header>
 
+      {/* NAVEGACIÓN DE RETORNO */}
+      <div className="flex gap-3 px-6 md:px-12 py-3 border-b border-border/40 bg-background">
+        <button
+          onClick={() => { window.location.href = `${import.meta.env.BASE_URL}categorias`; }}
+          className="flex items-center gap-2 border border-border px-4 py-2 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors"
+        >
+          ← VOLVER A CATEGORÍAS
+        </button>
+        <button
+          onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+          className="flex items-center gap-2 bg-foreground text-background px-4 py-2 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors"
+        >
+          ⌂ IR AL INICIO
+        </button>
+      </div>
+
       {/* TOAST NOTIFICATION */}
       <div className={`fixed top-20 right-6 z-50 bg-foreground text-background px-4 py-3 shadow-2xl flex items-center gap-3 transition-all duration-300 transform ${showSavedToast ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
         <CheckCircle2 className="w-4 h-4 text-accent" />
