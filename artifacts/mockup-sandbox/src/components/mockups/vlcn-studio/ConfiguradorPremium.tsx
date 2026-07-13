@@ -48,37 +48,7 @@ const PLACEMENTS = [
   { id: 'manga',   name: 'MANGA',   price: 1000, desc: 'Estampado lateral en manga derecha' },
 ];
 
-const COMUNAS_TEMUCO = [
-  'Amanecer',
-  'Avenida Alemania',
-  'Barrio Estación (Sector Feria Pinto)',
-  'Barrio Inglés',
-  'Camino a Cajón',
-  'Camino a Niágara',
-  'Centro',
-  'Chivilcán',
-  'Dreves',
-  'Fundo El Carmen',
-  'Javiera Carrera',
-  'Labranza',
-  'Las Quilas',
-  'Los Pablos',
-  'Millaray',
-  'Miraflores',
-  'Ñielol',
-  'Pedro de Valdivia',
-  'Portal de la Frontera',
-  'Pueblo Nuevo',
-  'San Antonio',
-  'Santa Rosa',
-  'Turingia',
-];
-
-const SHIPPING_TIERS = [
-  { min: 1, max: 2, price: 3100 },
-  { min: 3, max: 10, price: 3650 },
-  { min: 11, max: 20, price: 4700 }
-];
+const DELIVERY_COST = 2000; // CLP — costo fijo de delivery a domicilio en Temuco
 
 const formatCLP = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
@@ -147,11 +117,6 @@ async function colorizeShirt(colorHex: string): Promise<string> {
 }
 // -------------------------------------------------------
 
-const getShippingCost = (qty: number) => {
-  const tier = SHIPPING_TIERS.find(t => qty >= t.min && qty <= t.max);
-  if (tier) return tier.price;
-  return qty > 20 ? SHIPPING_TIERS[SHIPPING_TIERS.length - 1].price : SHIPPING_TIERS[0].price;
-};
 
 const SIZES = ['S', 'M', 'L', 'XL', '2XL'];
 
@@ -208,8 +173,7 @@ export default function ConfiguradorPremium() {
   const [waModalOpen, setWaModalOpen] = useState(false);
   const [waForm, setWaForm] = useState({ intent: '', deadline: '', qty: '' });
 
-  const [city, setCity] = useState<'temuco' | 'otra'>('temuco');
-  const [comuna, setComuna] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
 
 
   const [selectedColor, setSelectedColor] = useState('blanco');
@@ -288,8 +252,7 @@ export default function ConfiguradorPremium() {
 
   const unitPrice = base.price + placementsTotal;
   const subtotal = unitPrice * quantity;
-  const isOutsideTemuco = city === 'otra';
-  const shipping = isOutsideTemuco ? getShippingCost(quantity) : 0;
+  const shipping = deliveryMethod === 'delivery' ? DELIVERY_COST : 0;
   const total = subtotal + shipping;
 
   // --- HANDLERS ---
@@ -1005,50 +968,97 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               </div>
             </div>
 
-            {/* Ubicación y Envío */}
+            {/* Método de Envío */}
             <div className="pt-4 border-t border-border space-y-3 mt-6">
-              <p className="font-mono text-[10px] text-muted-foreground mb-1 flex items-center gap-2">
-                <MapPin className="w-3 h-3" /> UBICACIÓN Y ENVÍO
+              <p className="font-mono text-[10px] text-muted-foreground mb-2 flex items-center gap-2">
+                <MapPin className="w-3 h-3" /> MÉTODO DE ENVÍO
               </p>
 
-              <select
-                className="w-full p-3 border border-border bg-transparent focus:outline-none focus:border-accent font-mono text-xs"
-                value={city}
-                onChange={e => { setCity(e.target.value as 'temuco' | 'otra'); setComuna(''); }}
+              {/* Opción A — Punto de encuentro (gratis) */}
+              <label
+                className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-200 ${
+                  deliveryMethod === 'pickup'
+                    ? 'border-accent bg-accent/5 ring-1 ring-accent/40'
+                    : 'border-border hover:border-foreground/40'
+                }`}
               >
-                <option value="temuco">TEMUCO</option>
-                <option value="otra">OTRA CIUDAD (Región de La Araucanía)</option>
-              </select>
-
-              {city === 'temuco' && (
-                <select
-                  className="w-full p-3 border border-border bg-transparent focus:outline-none focus:border-accent font-mono text-xs"
-                  value={comuna}
-                  onChange={e => setComuna(e.target.value)}
-                >
-                  <option value="">SELECCIONA TU SECTOR</option>
-                  {COMUNAS_TEMUCO.map(c => (
-                    <option key={c} value={c}>{c.toUpperCase()}</option>
-                  ))}
-                </select>
-              )}
-
-              {isOutsideTemuco ? (
-                <div className="p-4 bg-muted border border-border/50 space-y-2">
-                  <h4 className="font-bold text-xs uppercase tracking-tight">Costos de Envío Región de La Araucanía vía Blue Express</h4>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">El valor del despacho se calcula según la cantidad de poleras en tu pedido:</p>
-                  <ul className="text-[10px] font-mono space-y-1 pt-1">
-                    <li className={quantity >= 1 && quantity <= 2 ? 'text-accent font-bold' : 'text-muted-foreground'}>1 a 2 poleras: {formatCLP(3100)}</li>
-                    <li className={quantity >= 3 && quantity <= 10 ? 'text-accent font-bold' : 'text-muted-foreground'}>3 a 10 poleras: {formatCLP(3650)}</li>
-                    <li className={quantity >= 11 && quantity <= 20 ? 'text-accent font-bold' : 'text-muted-foreground'}>11 a 20 poleras: {formatCLP(4700)}</li>
-                  </ul>
+                <div className="mt-0.5 shrink-0">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      deliveryMethod === 'pickup' ? 'border-accent' : 'border-border'
+                    }`}
+                    onClick={() => setDeliveryMethod('pickup')}
+                  >
+                    {deliveryMethod === 'pickup' && (
+                      <div className="w-2 h-2 rounded-full bg-accent" />
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="p-4 border border-accent/40 bg-accent/5 flex items-start gap-3">
-                  <Package className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-muted-foreground">Retiro o despacho local gratuito dentro de Temuco.</p>
+                <input
+                  type="radio"
+                  name="deliveryMethod"
+                  value="pickup"
+                  checked={deliveryMethod === 'pickup'}
+                  onChange={() => setDeliveryMethod('pickup')}
+                  className="sr-only"
+                />
+                <div className="flex-1 min-w-0" onClick={() => setDeliveryMethod('pickup')}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-xs font-bold uppercase tracking-wider">Entrega en Centro (Gratis)</p>
+                    <span className="font-mono text-sm font-bold text-accent shrink-0">$0</span>
+                  </div>
+                  <p className="font-mono text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                    Punto de encuentro seguro en Temuco Centro (ej: Plaza de Armas). Coordinaremos fecha y hora por WhatsApp tras confirmar tu pedido.
+                  </p>
                 </div>
-              )}
+              </label>
+
+              {/* Opción B — Delivery a domicilio ($2.000) */}
+              <label
+                className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-200 ${
+                  deliveryMethod === 'delivery'
+                    ? 'border-accent bg-accent/5 ring-1 ring-accent/40'
+                    : 'border-border hover:border-foreground/40'
+                }`}
+              >
+                <div className="mt-0.5 shrink-0">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      deliveryMethod === 'delivery' ? 'border-accent' : 'border-border'
+                    }`}
+                    onClick={() => setDeliveryMethod('delivery')}
+                  >
+                    {deliveryMethod === 'delivery' && (
+                      <div className="w-2 h-2 rounded-full bg-accent" />
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="radio"
+                  name="deliveryMethod"
+                  value="delivery"
+                  checked={deliveryMethod === 'delivery'}
+                  onChange={() => setDeliveryMethod('delivery')}
+                  className="sr-only"
+                />
+                <div className="flex-1 min-w-0" onClick={() => setDeliveryMethod('delivery')}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-xs font-bold uppercase tracking-wider">Delivery a Domicilio (Temuco)</p>
+                    <span className="font-mono text-sm font-bold shrink-0">+{formatCLP(DELIVERY_COST)}</span>
+                  </div>
+                  <p className="font-mono text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                    Delivery disponible para radios urbanos de Temuco. Si tu dirección es fuera del radio, te contactaremos para coordinar envío por pagar.
+                  </p>
+                </div>
+              </label>
+
+              {/* Política de seguridad de pago */}
+              <div className="flex items-start gap-2 p-3 border border-border/60 bg-muted/60">
+                <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="font-mono text-[10px] text-muted-foreground leading-relaxed">
+                  <span className="font-bold text-foreground">Nota:</span> Para asegurar la eficiencia de nuestro servicio, los pedidos deben estar pagados vía transferencia antes de coordinar la entrega o despacho.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -1060,7 +1070,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 <span className="text-3xl font-bold tracking-tighter">{formatCLP(total)}</span>
                 <span className="font-mono text-xs text-muted-foreground">CLP</span>
               </div>
-              <p className="text-[10px] text-muted-foreground lg:hidden">Base + Impresión {isOutsideTemuco ? `+ Envío ${formatCLP(shipping)}` : '+ Envío gratis (Temuco)'}</p>
+              <p className="text-[10px] text-muted-foreground lg:hidden">Base + Impresión {deliveryMethod === 'delivery' ? `+ Delivery ${formatCLP(DELIVERY_COST)}` : '+ Punto de encuentro gratis'}</p>
             </div>
             
             <div className="flex gap-2 flex-col lg:flex-row lg:w-full w-auto">
