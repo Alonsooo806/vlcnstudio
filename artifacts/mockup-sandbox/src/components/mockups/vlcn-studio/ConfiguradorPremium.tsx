@@ -294,18 +294,31 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedBase(b.id); setShowColorConfig(b.id === 'tee'); } }}
                       className={`group text-left relative border p-4 transition-all duration-300 cursor-pointer ${selectedBase === b.id ? 'border-accent ring-1 ring-accent' : 'border-border hover:border-foreground/50'}`}
                     >
-                      <div className="aspect-square bg-muted mb-4 overflow-hidden relative">
+                      <div className="aspect-square bg-white mb-4 overflow-hidden relative isolate">
                         {b.id === 'tee' ? (
                           <>
-                            <img src={`generated_images/vlcn-emerald-card-white.png`} alt={`${b.name} - BLANCO`} className={`w-full h-full object-cover transition-transform duration-700 ${selectedBase === b.id ? 'scale-105' : 'group-hover:scale-110'}`} />
+                            {/* Base blanca con textura real de tejido */}
+                            <img
+                              src={`generated_images/vlcn-shirt-blanco.png`}
+                              alt={`${b.name} - ${currentColor.name}`}
+                              className={`w-full h-full object-contain relative z-10 transition-transform duration-700 ${selectedBase === b.id ? 'scale-105' : 'group-hover:scale-110'}`}
+                            />
+                            {/* Capa de color en tiempo real — multiply preserva pliegues y sombras */}
+                            <div
+                              className="absolute inset-0 z-10 pointer-events-none transition-colors duration-150"
+                              style={{
+                                backgroundColor: currentColor.hex === '#000000' ? '#111111' : currentColor.hex,
+                                mixBlendMode: 'multiply',
+                              }}
+                            />
                             <button
                               onClick={(e) => { e.stopPropagation(); nextColor(); }}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-foreground rounded-full p-2 shadow-lg transition-transform hover:scale-110"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-foreground rounded-full p-2 shadow-lg transition-transform hover:scale-110"
                               aria-label="Ver siguiente color"
                             >
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                               {COLORS.map(c => (
                                 <span
                                   key={c.id}
@@ -429,15 +442,24 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           {showColorConfig && (
           <section className="p-6 md:p-12 border-b border-border/40 bg-[#FAFAFA]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              {/* High Fidelity Viewer */}
-              <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair">
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+              {/* High Fidelity Viewer — renderizado en tiempo real por mix-blend-mode */}
+              <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair isolate">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                   <div className="bg-background/80 backdrop-blur font-mono text-[10px] px-3 py-1 border border-border">INSPECCIÓN X-RAY</div>
                 </div>
+                {/* Base: camisa blanca con textura, pliegues y costuras visibles */}
                 <img 
-                  src={viewerImg} 
+                  src={`generated_images/vlcn-shirt-blanco.png`}
                   alt={`Vista Detallada - ${previewColor.name}`} 
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.35] origin-center"
+                  className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-[1.35] origin-center relative z-10"
+                />
+                {/* Capa de color — multiply preserva sombras y pliegues del tejido */}
+                <div
+                  className="absolute inset-0 z-10 pointer-events-none transition-colors duration-150"
+                  style={{
+                    backgroundColor: previewColor.hex === '#000000' ? '#111111' : previewColor.hex,
+                    mixBlendMode: 'multiply',
+                  }}
                 />
               </div>
 
