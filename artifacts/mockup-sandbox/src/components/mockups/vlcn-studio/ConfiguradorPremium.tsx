@@ -27,14 +27,14 @@ const BASES = [
 ];
 
 const COLORS = [
-  { id: 'negro', name: 'NEGRO', hex: '#000000', img: `generated_images/vlcn-emerald-negro.png` },
-  { id: 'blanco', name: 'BLANCO', hex: '#FFFFFF', img: `generated_images/vlcn-emerald-blanco.png` },
-  { id: 'rojo', name: 'ROJO', hex: '#DC2626', img: `generated_images/vlcn-emerald-rojo.png` },
-  { id: 'naranjo', name: 'NARANJO', hex: '#F97316', img: `generated_images/vlcn-emerald-naranjo.png` },
-  { id: 'amarillo', name: 'AMARILLO', hex: '#EAB308', img: `generated_images/vlcn-emerald-amarillo.png` },
-  { id: 'verde', name: 'VERDE', hex: '#16A34A', img: `generated_images/vlcn-emerald-verde.png` },
-  { id: 'azul', name: 'AZUL', hex: '#2563EB', img: `generated_images/vlcn-emerald-azul.png` },
-  { id: 'violeta', name: 'VIOLETA', hex: '#7C3AED', img: `generated_images/vlcn-emerald-violeta.png` },
+  { id: 'negro',    name: 'NEGRO',    hex: '#000000', img: `generated_images/vlcn-shirt-negro.png`    },
+  { id: 'blanco',   name: 'BLANCO',   hex: '#FFFFFF', img: `generated_images/vlcn-shirt-blanco.png`   },
+  { id: 'rojo',     name: 'ROJO',     hex: '#DC2626', img: `generated_images/vlcn-shirt-rojo.png`     },
+  { id: 'naranjo',  name: 'NARANJO',  hex: '#F97316', img: `generated_images/vlcn-shirt-naranjo.png`  },
+  { id: 'amarillo', name: 'AMARILLO', hex: '#EAB308', img: `generated_images/vlcn-shirt-amarillo.png` },
+  { id: 'verde',    name: 'VERDE',    hex: '#16A34A', img: `generated_images/vlcn-shirt-verde.png`    },
+  { id: 'azul',     name: 'AZUL',     hex: '#2563EB', img: `generated_images/vlcn-shirt-azul.png`     },
+  { id: 'violeta',  name: 'VIOLETA',  hex: '#7C3AED', img: `generated_images/vlcn-shirt-violeta.png`  },
 ];
 
 const PRINTS = [
@@ -377,12 +377,17 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       <div className="aspect-square bg-white mb-4 overflow-hidden relative">
                         {b.id === 'tee' ? (
                           <>
-                            {/* Camiseta coloreada por canvas — solo tela, fondo inalterado */}
-                            <img
-                              src={colorizedUrls[currentColor.hex] ?? SHIRT_BASE_SRC}
-                              alt={`${b.name} - ${currentColor.name}`}
-                              className={`w-full h-full object-contain transition-transform duration-700 ${selectedBase === b.id ? 'scale-105' : 'group-hover:scale-110'}`}
-                            />
+                            {/* Crossfade fotorrealista entre colores */}
+                            {COLORS.map(c => (
+                              <img
+                                key={c.id}
+                                src={`${import.meta.env.BASE_URL}${c.img}`}
+                                alt={`${b.name} - ${c.name}`}
+                                className={`absolute inset-0 w-full h-full object-contain transition-all duration-500 ${
+                                  currentColor.id === c.id ? 'opacity-100' : 'opacity-0'
+                                } ${selectedBase === b.id ? 'scale-105' : 'group-hover:scale-110'}`}
+                              />
+                            ))}
                             <button
                               onClick={(e) => { e.stopPropagation(); nextColor(); }}
                               className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-foreground rounded-full p-2 shadow-lg transition-transform hover:scale-110"
@@ -586,18 +591,22 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           {showColorConfig && (
           <section className="p-6 md:p-12 border-b border-border/40 bg-[#FAFAFA]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              {/* High Fidelity Viewer — tinte canvas: solo tela, fondo de madera inalterado */}
+              {/* High Fidelity Viewer — crossfade fotorrealista entre colores */}
               <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair">
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                   <div className="bg-background/80 backdrop-blur font-mono text-[10px] px-3 py-1 border border-border">INSPECCIÓN X-RAY</div>
                 </div>
-                {/* Camiseta coloreada selectivamente por canvas — pliegues y sombras preservados */}
-                <img
-                  key={previewColor.hex}
-                  src={colorizedUrls[previewColor.hex] ?? SHIRT_BASE_SRC}
-                  alt={`Vista Detallada - ${previewColor.name}`}
-                  className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-[1.35] origin-center"
-                />
+                {/* Todas las imágenes apiladas — crossfade suave al cambiar color */}
+                {COLORS.map(c => (
+                  <img
+                    key={c.id}
+                    src={`${import.meta.env.BASE_URL}${c.img}`}
+                    alt={`Vista Detallada - ${c.name}`}
+                    className={`absolute inset-0 w-full h-full object-contain transition-all duration-500 group-hover:scale-[1.35] origin-center ${
+                      previewColor.id === c.id ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                    }`}
+                  />
+                ))}
               </div>
 
               {/* Technical Specs & Sizing */}
