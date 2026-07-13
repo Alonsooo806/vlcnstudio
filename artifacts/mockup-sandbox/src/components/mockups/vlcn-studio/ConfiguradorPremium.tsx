@@ -49,14 +49,29 @@ const PLACEMENTS = [
 ];
 
 const COMUNAS_TEMUCO = [
-  'Centro',
-  'Pedro de Valdivia',
   'Amanecer',
+  'Avenida Alemania',
+  'Barrio Estación (Sector Feria Pinto)',
+  'Barrio Inglés',
+  'Camino a Cajón',
+  'Camino a Niágara',
+  'Centro',
+  'Chivilcán',
+  'Dreves',
+  'Fundo El Carmen',
+  'Javiera Carrera',
   'Labranza',
-  'Pueblo Nuevo',
-  'Santa Rosa',
+  'Las Quilas',
+  'Los Pablos',
+  'Millaray',
   'Miraflores',
-  'Ñielol'
+  'Ñielol',
+  'Pedro de Valdivia',
+  'Portal de la Frontera',
+  'Pueblo Nuevo',
+  'San Antonio',
+  'Santa Rosa',
+  'Turingia',
 ];
 
 const SHIPPING_TIERS = [
