@@ -181,7 +181,8 @@ export default function ConfiguradorPremium() {
   const [step, setStep] = useState(1);
   const [selectedBase, setSelectedBase] = useState(BASES[0].id);
   const [selectedPrint, setSelectedPrint] = useState(PRINTS[0].id);
-  const [selectedPlacement, setSelectedPlacement] = useState(PLACEMENTS[0].id);
+  const [selectedPlacements, setSelectedPlacements] = useState<string[]>([PLACEMENTS[0].id]);
+  const [placementsConfirmed, setPlacementsConfirmed] = useState(false);
   const [size, setSize] = useState('L');
   const [quantity, setQuantity] = useState(1);
   
@@ -235,7 +236,10 @@ export default function ConfiguradorPremium() {
   // --- DERIVED STATE ---
   const base = BASES.find(b => b.id === selectedBase)!;
   const print = PRINTS.find(p => p.id === selectedPrint)!;
-  const placement = PLACEMENTS.find(p => p.id === selectedPlacement)!;
+  // Multi-placement support
+  const placements = PLACEMENTS.filter(p => selectedPlacements.includes(p.id));
+  const placementsTotal = placements.reduce((sum, p) => sum + p.price, 0);
+  const primaryPlacement = placements[0] || PLACEMENTS[0];
   const colorIndex = COLORS.findIndex(c => c.id === selectedColor);
   const currentColor = COLORS[colorIndex];
   const previewColor = COLORS.find(c => c.id === hoveredColor) || currentColor;
@@ -244,7 +248,7 @@ export default function ConfiguradorPremium() {
   // El estampado de un diseño propio subido por el cliente siempre sigue la Tabla de Escalamiento
   // completa (S 25×35 … 2XL 33×43), sin excepción de tamaño fijo. La excepción de logo fijo
   // (10×10cm) sólo aplica al placement "pecho" cuando se usa un gráfico de catálogo pequeño.
-  const isPechoLogoFijo = selectedPlacement === 'pecho' && !uploadedDesign;
+  const isPechoLogoFijo = selectedPlacements.includes('pecho') && !uploadedDesign;
   const printMeasure = isPechoLogoFijo ? LOGO_PECHO_SIZE : PRINT_SIZE_BY_TALLA[size];
   const printScale = isPechoLogoFijo ? { x: 1, y: 1 } : getPrintScale(size);
   // Regla de oro: el ancho visible del estampado se mantiene siempre ~50-55% del ancho de la
@@ -252,13 +256,20 @@ export default function ConfiguradorPremium() {
   const printWidthRatioPct = getPrintWidthRatio(size) * 100;
   const printWidthPercent = isPechoLogoFijo
     ? 20 // logo fijo de catálogo (10×10cm), ancho de display constante independiente de la talla
-    : selectedPlacement === 'pecho'
+    : primaryPlacement.id === 'pecho'
       ? printWidthRatioPct * 0.6
-      : selectedPlacement === 'espalda'
+      : primaryPlacement.id === 'espalda'
         ? printWidthRatioPct
         : printWidthRatioPct * 0.4; // manga
-  
-  const unitPrice = base.price + placement.price;
+
+  const togglePlacement = (id: string) => {
+    setSelectedPlacements(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+    setPlacementsConfirmed(false);
+  };
+
+  const unitPrice = base.price + placementsTotal;
   const subtotal = unitPrice * quantity;
   const isOutsideTemuco = city === 'otra';
   const shipping = isOutsideTemuco ? getShippingCost(quantity) : 0;
@@ -266,13 +277,14 @@ export default function ConfiguradorPremium() {
 
   // --- HANDLERS ---
   const handleSaveConfig = () => {
-    setSavedConfigs(prev => [...prev, { base, print, placement, size, quantity }]);
+    setSavedConfigs(prev => [...prev, { base, print, placements, size, quantity }]);
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 3000);
   };
 
   const handleGmailSend = () => {
     const subject = encodeURIComponent('Solicitud de diseño asistido');
+    const placementLines = placements.map(p => `  · ${p.name}: ${formatCLP(p.price)}`).join('\n');
     const body = encodeURIComponent(
 `Hola VLCN STUDIO 👋
 
@@ -286,7 +298,9 @@ Quiero realizar una solicitud para mi camiseta personalizada.
 (Describe tu idea, logo o referencias aquí)
 
 --- DETALLES TÉCNICOS ---
-Ubicación: ${placement.name}
+Ubicaciones seleccionadas:
+${placementLines}
+Total ubicaciones: ${formatCLP(placementsTotal)}
 Fecha límite:
 Uso:
 
@@ -298,12 +312,13 @@ Gracias!`
 
   const handleWAContact = (e: React.FormEvent) => {
     e.preventDefault();
+    const placementNames = placements.map(p => p.name).join(', ') || 'Sin ubicación';
     const text = `Hola VLCN STUDIO. Me interesa una colaboración técnica.
 - Uso: ${waForm.intent}
 - Fecha límite: ${waForm.deadline}
 - Cantidad aprox: ${waForm.qty}
 
-Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placement.name}.`;
+Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placementNames}.`;
     
     window.open(`https://wa.me/1234567890?text=${encodeURIComponent(text)}`, '_blank');
     setWaModalOpen(false);
@@ -471,38 +486,38 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     <h3 className="font-mono text-sm text-muted-foreground mb-1">SELECCIONA UBICACIÓN</h3>
                     <p className="font-mono text-[10px] text-muted-foreground/70 mb-6">El costo varía según la zona de impresión.</p>
 
+                    {/* Checkboxes multi-selección */}
                     <div className="space-y-3">
                       {PLACEMENTS.map(p => {
-                        const isSelected = selectedPlacement === p.id;
+                        const isSelected = selectedPlacements.includes(p.id);
                         return (
                           <label
                             key={p.id}
                             className={`flex items-center gap-5 p-5 border cursor-pointer transition-all duration-200 group
                               ${isSelected
-                                ? 'border-accent bg-accent/5 ring-1 ring-accent/40'
+                                ? 'border-accent bg-accent/5 ring-2 ring-accent/40'
                                 : 'border-border hover:border-foreground/40'
                               }`}
                           >
-                            {/* Radio circle */}
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                              ${isSelected ? 'border-accent' : 'border-border group-hover:border-foreground/50'}`}
+                            {/* Checkbox cuadrado estilizado */}
+                            <div
+                              onClick={() => togglePlacement(p.id)}
+                              className={`w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer
+                                ${isSelected ? 'border-accent bg-accent' : 'border-border group-hover:border-foreground/50'}`}
                             >
-                              {isSelected && (
-                                <div className="w-2.5 h-2.5 rounded-full bg-accent" />
-                              )}
+                              {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                             </div>
 
                             <input
-                              type="radio"
-                              name="placement"
+                              type="checkbox"
                               value={p.id}
                               checked={isSelected}
-                              onChange={() => setSelectedPlacement(p.id)}
+                              onChange={() => togglePlacement(p.id)}
                               className="sr-only"
                             />
 
                             {/* Label content */}
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0" onClick={() => togglePlacement(p.id)}>
                               <p className={`font-mono text-sm font-bold tracking-wider uppercase ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}>
                                 {p.name}
                               </p>
@@ -510,9 +525,9 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                             </div>
 
                             {/* Price */}
-                            <div className="text-right shrink-0">
-                              <p className={`font-mono text-base font-bold ${isSelected ? 'text-accent' : 'text-foreground/70'}`}>
-                                {formatCLP(p.price)}
+                            <div className="text-right shrink-0" onClick={() => togglePlacement(p.id)}>
+                              <p className={`font-mono text-base font-bold transition-colors ${isSelected ? 'text-accent' : 'text-foreground/70'}`}>
+                                +{formatCLP(p.price)}
                               </p>
                               <p className="font-mono text-[10px] text-muted-foreground">CLP</p>
                             </div>
@@ -521,56 +536,112 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       })}
                     </div>
 
-                    {/* Precio total calculado inline */}
-                    <div className="mt-6 p-4 border border-border/50 bg-muted/50 flex items-center justify-between">
-                      <div>
-                        <p className="font-mono text-[10px] text-muted-foreground">BASE + UBICACIÓN × {quantity} ud.</p>
-                        <p className="font-mono text-xs text-muted-foreground mt-0.5">
-                          ({formatCLP(base.price)} + {formatCLP(placement.price)}) × {quantity}
-                        </p>
+                    {/* Acumulador de precio en tiempo real */}
+                    <div className="mt-4 p-4 border border-border bg-muted/60">
+                      <div className="space-y-1.5 mb-3">
+                        <div className="flex justify-between font-mono text-[11px] text-muted-foreground">
+                          <span>PRENDA BASE</span>
+                          <span>{formatCLP(base.price)}</span>
+                        </div>
+                        {PLACEMENTS.map(p => {
+                          const sel = selectedPlacements.includes(p.id);
+                          return (
+                            <div key={p.id} className={`flex justify-between font-mono text-[11px] transition-all duration-200 ${sel ? 'text-accent font-bold' : 'text-muted-foreground/40 line-through'}`}>
+                              <span>ESTAMPADO {p.name}</span>
+                              <span>+{formatCLP(p.price)}</span>
+                            </div>
+                          );
+                        })}
+                        <div className="flex justify-between font-mono text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+                          <span>× {quantity} unidades</span>
+                        </div>
                       </div>
-                      <p className="font-mono text-xl font-bold">{formatCLP(subtotal)}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Total estimado</p>
+                        <p className="font-mono text-2xl font-bold text-foreground tabular-nums">{formatCLP(subtotal)}</p>
+                      </div>
                     </div>
+
+                    {/* Botón CONFIRMAR ELECCIÓN */}
+                    <button
+                      onClick={() => {
+                        if (selectedPlacements.length > 0) {
+                          setPlacementsConfirmed(true);
+                          setStep(1); // volver al configurador principal con selección guardada
+                        }
+                      }}
+                      disabled={selectedPlacements.length === 0}
+                      className={`mt-4 w-full py-4 px-6 font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-200 group
+                        ${selectedPlacements.length > 0
+                          ? placementsConfirmed
+                            ? 'bg-accent text-white cursor-default'
+                            : 'bg-foreground text-background hover:bg-accent'
+                          : 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                        }`}
+                    >
+                      {placementsConfirmed
+                        ? <><CheckCircle2 className="w-4 h-4" /> ELECCIÓN CONFIRMADA</>
+                        : <><Check className="w-4 h-4" /> CONFIRMAR ELECCIÓN · {formatCLP(subtotal)} CLP</>
+                      }
+                    </button>
+                    {selectedPlacements.length === 0 && (
+                      <p className="mt-2 font-mono text-[10px] text-muted-foreground text-center">Selecciona al menos una ubicación para continuar.</p>
+                    )}
                   </div>
 
                   {/* Panel derecho: resumen técnico de la ubicación */}
                   <div>
                     <h3 className="font-mono text-sm text-muted-foreground mb-6">UBICACIÓN TÉCNICA</h3>
 
-                    {/* Card de ubicación activa */}
-                    <div className="border border-accent p-6 bg-accent/5 mb-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <p className="font-mono text-[10px] text-muted-foreground mb-1">ZONA ACTIVA</p>
-                          <h4 className="font-bold text-2xl tracking-tighter uppercase">{placement.name}</h4>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-mono text-[10px] text-muted-foreground mb-1">COSTO</p>
-                          <p className="font-mono text-xl font-bold text-accent">{formatCLP(placement.price)}</p>
-                        </div>
+                    {/* Cards de zonas seleccionadas */}
+                    {selectedPlacements.length === 0 ? (
+                      <div className="border border-dashed border-border p-6 text-center">
+                        <p className="font-mono text-xs text-muted-foreground">Ninguna zona seleccionada.<br />Marca una o más opciones a la izquierda.</p>
                       </div>
-                      <p className="font-mono text-xs text-muted-foreground border-t border-border/50 pt-4">{placement.desc}</p>
-                    </div>
-
-                    {/* Tabla comparativa de precios */}
-                    <div className="space-y-0 border border-border/40">
-                      {PLACEMENTS.map((p, i) => (
-                        <div
-                          key={p.id}
-                          className={`flex items-center justify-between px-4 py-3 font-mono text-xs transition-colors
-                            ${p.id === selectedPlacement ? 'bg-accent/10 text-foreground' : 'text-muted-foreground'}
-                            ${i < PLACEMENTS.length - 1 ? 'border-b border-border/40' : ''}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            {p.id === selectedPlacement
-                              ? <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
-                              : <div className="w-3.5 h-3.5 rounded-full border border-border/60 shrink-0" />
-                            }
-                            <span className="font-bold uppercase tracking-wider">{p.name}</span>
+                    ) : (
+                      <div className="space-y-3 mb-6">
+                        {PLACEMENTS.filter(p => selectedPlacements.includes(p.id)).map(p => (
+                          <div key={p.id} className="border border-accent p-4 bg-accent/5">
+                            <div className="flex items-start justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
+                                <h4 className="font-bold text-sm tracking-tighter uppercase">{p.name}</h4>
+                              </div>
+                              <p className="font-mono text-sm font-bold text-accent">{formatCLP(p.price)}</p>
+                            </div>
+                            <p className="font-mono text-[11px] text-muted-foreground pl-6">{p.desc}</p>
                           </div>
-                          <span className={p.id === selectedPlacement ? 'text-accent font-bold' : ''}>{formatCLP(p.price)}</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tabla con estado visual de todas las opciones */}
+                    <div className="space-y-0 border border-border/40">
+                      {PLACEMENTS.map((p, i) => {
+                        const sel = selectedPlacements.includes(p.id);
+                        return (
+                          <div
+                            key={p.id}
+                            className={`flex items-center justify-between px-4 py-3 font-mono text-xs transition-all duration-200
+                              ${sel ? 'bg-accent/10 text-foreground' : 'text-muted-foreground'}
+                              ${i < PLACEMENTS.length - 1 ? 'border-b border-border/40' : ''}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {sel
+                                ? <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                                : <div className="w-3.5 h-3.5 border border-border/60 shrink-0" />
+                              }
+                              <span className={`font-bold uppercase tracking-wider ${sel ? '' : 'line-through opacity-50'}`}>{p.name}</span>
+                            </div>
+                            <span className={sel ? 'text-accent font-bold' : 'opacity-40'}>{formatCLP(p.price)}</span>
+                          </div>
+                        );
+                      })}
+                      {/* Fila de total */}
+                      <div className="flex items-center justify-between px-4 py-3 font-mono text-xs bg-foreground text-background">
+                        <span className="font-bold uppercase tracking-wider">TOTAL UBICACIONES</span>
+                        <span className="font-bold">{formatCLP(placementsTotal)}</span>
+                      </div>
                     </div>
 
                     <div className="mt-6 p-5 bg-muted border border-border/50">
@@ -835,10 +906,24 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               </div>
               <div>
                 <p className="font-mono text-[10px] text-muted-foreground mb-1">IMPRESIÓN — UBICACIÓN</p>
-                <div className="flex justify-between items-start">
-                  <p className="font-bold text-sm max-w-[70%]">Estampado {placement.name}</p>
-                  <p className="font-mono text-sm">+{formatCLP(placement.price)}</p>
-                </div>
+                {placements.length === 0 ? (
+                  <p className="font-mono text-xs text-muted-foreground/60 italic">Sin ubicación seleccionada</p>
+                ) : (
+                  <div className="space-y-1">
+                    {placements.map(p => (
+                      <div key={p.id} className="flex justify-between items-center">
+                        <p className="font-bold text-sm">Estampado {p.name}</p>
+                        <p className="font-mono text-sm">+{formatCLP(p.price)}</p>
+                      </div>
+                    ))}
+                    {placements.length > 1 && (
+                      <div className="flex justify-between items-center border-t border-border/40 pt-1 mt-1">
+                        <p className="font-mono text-[10px] text-muted-foreground">SUBTOTAL UBICACIONES</p>
+                        <p className="font-mono text-xs font-bold text-accent">+{formatCLP(placementsTotal)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div className="pt-4 border-t border-border">
