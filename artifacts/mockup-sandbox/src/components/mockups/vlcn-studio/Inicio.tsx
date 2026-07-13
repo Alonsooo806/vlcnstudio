@@ -11,7 +11,7 @@ export default function Inicio() {
   const [slide, setSlide] = useState(0);
 
   const goToConfigurador = () => {
-    window.location.href = `${import.meta.env.BASE_URL}configurador`;
+    window.location.href = `${import.meta.env.BASE_URL}categorias`;
   };
 
   const nextSlide = () => setSlide((prev) => (prev + 1) % SLIDES.length);

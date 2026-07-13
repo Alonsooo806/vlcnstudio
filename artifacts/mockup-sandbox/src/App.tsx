@@ -3,6 +3,8 @@ import { useEffect, useState, type ComponentType } from "react";
 import { modules as discoveredModules } from "./.generated/mockup-components";
 import Inicio from "./components/mockups/vlcn-studio/Inicio";
 import ConfiguradorPremium from "./components/mockups/vlcn-studio/ConfiguradorPremium";
+import Categorias from "./components/mockups/vlcn-studio/Categorias";
+import SubCatalogo from "./components/mockups/vlcn-studio/SubCatalogo";
 import ChatWidget from "./components/mockups/vlcn-studio/ChatWidget";
 
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
@@ -131,7 +133,7 @@ function getPreviewPath(): string | null {
   return match ? match[1] : null;
 }
 
-function getSiteRoute(): "home" | "configurador" | null {
+function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" | null {
   const basePath = getBasePath();
   const { pathname } = window.location;
   const local =
@@ -141,6 +143,8 @@ function getSiteRoute(): "home" | "configurador" | null {
 
   if (local === "/" || local === "") return "home";
   if (local === "/configurador") return "configurador";
+  if (local === "/categorias") return "categorias";
+  if (local.startsWith("/categorias/")) return "subcatalogo";
   return null;
 }
 
@@ -163,6 +167,8 @@ function App() {
   const siteRoute = getSiteRoute();
   if (siteRoute === "home") return <><Inicio /><ChatWidget /></>;
   if (siteRoute === "configurador") return <><ConfiguradorPremium /><ChatWidget /></>;
+  if (siteRoute === "categorias") return <Categorias />;
+  if (siteRoute === "subcatalogo") return <SubCatalogo />;
 
   return <Gallery />;
 }
