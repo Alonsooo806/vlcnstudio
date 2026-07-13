@@ -306,7 +306,8 @@ Uso:
 
 Gracias!`
     );
-    window.open(`mailto:alonsoovalentino@gmail.com?subject=${subject}&body=${body}`, '_blank');
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=alonsoovalentino%40gmail.com&su=${subject}&body=${body}`;
+    window.open(gmailUrl, '_blank', 'noopener,noreferrer');
     setGmailModalOpen(false);
   };
 
