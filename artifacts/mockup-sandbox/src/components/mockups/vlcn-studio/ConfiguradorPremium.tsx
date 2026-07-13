@@ -825,7 +825,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
 
               <div className="bg-amber-50 border border-amber-200 p-3 rounded flex items-start gap-2">
                 <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-800">Este canal es <strong>exclusivo para diseño asistido por texto y correo</strong>. Si ya tienes tu archivo listo, usa la opción <em>"Sube la foto de tu diseño"</em> en el paso 1.</p>
+                <p className="text-xs text-amber-800">Este canal es <strong>exclusivo para diseño asistido por texto y correo</strong>. Si ya tienes tu archivo listo, usa la opción <em>"Explica tu idea al correo!"</em> en el paso 1.</p>
               </div>
 
               <button
