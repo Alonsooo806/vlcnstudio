@@ -110,9 +110,18 @@ export default function Categorias() {
       </header>
 
       {/* TITLE STRIP */}
-      <div className="px-6 md:px-16 py-8 border-b border-white/5">
-        <p className="font-mono text-xs text-zinc-500 tracking-widest mb-1">PASO 01 / CATEGORÍA</p>
-        <h1 className="text-3xl md:text-5xl font-bold tracking-tighter">¿QUÉ QUIERES PERSONALIZAR?</h1>
+      <div className="px-6 md:px-16 py-8 border-b border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs text-zinc-500 tracking-widest mb-1">PASO 01 / CATEGORÍA</p>
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tighter">¿QUÉ QUIERES PERSONALIZAR?</h1>
+        </div>
+        <button
+          onClick={() => nav('')}
+          className="flex items-center gap-2 border border-white/15 px-5 py-2.5 font-mono text-xs font-bold tracking-wider text-zinc-300 hover:bg-white/10 hover:text-white transition-all w-fit shrink-0"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          VOLVER AL INICIO
+        </button>
       </div>
 
       {/* 2×2 GRID — fills remaining screen */}

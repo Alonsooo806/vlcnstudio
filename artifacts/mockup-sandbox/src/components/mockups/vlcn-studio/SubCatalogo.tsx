@@ -275,13 +275,24 @@ export default function SubCatalogo() {
 
       {/* HERO DE SECCIÓN */}
       <div className="relative px-6 md:px-16 py-10 border-b border-white/5">
-        <p className="font-mono text-xs text-zinc-500 tracking-widest mb-2">
-          CATEGORÍA / {tema.label}
-        </p>
-        <h1 className={`text-4xl md:text-6xl font-bold tracking-tighter mb-3 ${tema.accentColor}`}>
-          {tema.label}
-        </h1>
-        <p className="font-mono text-xs text-zinc-500 tracking-widest">{tema.tagline}</p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+          <div>
+            <p className="font-mono text-xs text-zinc-500 tracking-widest mb-2">
+              CATEGORÍA / {tema.label}
+            </p>
+            <h1 className={`text-4xl md:text-6xl font-bold tracking-tighter mb-3 ${tema.accentColor}`}>
+              {tema.label}
+            </h1>
+            <p className="font-mono text-xs text-zinc-500 tracking-widest">{tema.tagline}</p>
+          </div>
+          <button
+            onClick={() => { window.location.href = `${BASE}categorias`; }}
+            className="flex items-center gap-2 border border-white/15 px-5 py-2.5 font-mono text-xs font-bold tracking-wider text-zinc-300 hover:bg-white/10 hover:text-white transition-all w-fit shrink-0 mt-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            VOLVER A CATEGORÍAS
+          </button>
+        </div>
 
         {/* CITAS — solo Películas & Series */}
         {tema.citas && tema.citas.length > 0 && (
