@@ -42,3 +42,51 @@ id = "f4s3Hxdak8gjNwuoLOmjp"
 uri = "file://attached_assets/generated_images/configurador-violeta.jpg"
 type = "image"
 title = "Configurador — VIOLETA"
+
+[[outputs]]
+id = "-GNzS9766vy74G1m8KviD"
+uri = "file://attached_assets/generated_images/config-negro.jpg"
+type = "image"
+title = "Configurador — NEGRO"
+
+[[outputs]]
+id = "BgLwbyZByvW3SRADFBxgo"
+uri = "file://attached_assets/generated_images/config-blanco.jpg"
+type = "image"
+title = "Configurador — BLANCO"
+
+[[outputs]]
+id = "F-4oS89lveDjMNa8h8x-K"
+uri = "file://attached_assets/generated_images/config-naranja.jpg"
+type = "image"
+title = "Configurador — NARANJA"
+
+[[outputs]]
+id = "7jpZzPLZFm4myOBKp0g29"
+uri = "file://attached_assets/generated_images/config-amarillo.jpg"
+type = "image"
+title = "Configurador — AMARILLO"
+
+[[outputs]]
+id = "ADzGtnnpRLXzor69ZLTVQ"
+uri = "file://attached_assets/generated_images/config-verde.jpg"
+type = "image"
+title = "Configurador — VERDE"
+
+[[outputs]]
+id = "LFiLWiHNodo7PdcrOJnnd"
+uri = "file://attached_assets/generated_images/config-rojo.jpg"
+type = "image"
+title = "Configurador — ROJO"
+
+[[outputs]]
+id = "KdRpSEgOx8QaoE0-zDiYQ"
+uri = "file://attached_assets/generated_images/config-azul.jpg"
+type = "image"
+title = "Configurador — AZUL"
+
+[[outputs]]
+id = "Fc3TE0fstyeNmaPp7KRjL"
+uri = "file://attached_assets/generated_images/config-morado.jpg"
+type = "image"
+title = "Configurador — MORADO"
