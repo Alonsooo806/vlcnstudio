@@ -43,12 +43,10 @@ const PRINTS = [
 ];
 
 const PLACEMENTS = [
-  { id: 'pecho', name: 'PECHO' },
-  { id: 'espalda', name: 'ESPALDA' },
-  { id: 'manga', name: 'MANGA' }
+  { id: 'pecho',   name: 'PECHO',   price: 6000, desc: 'Estampado frontal centrado sobre pecho' },
+  { id: 'espalda', name: 'ESPALDA', price: 2000, desc: 'Estampado dorsal de gran formato' },
+  { id: 'manga',   name: 'MANGA',   price: 1000, desc: 'Estampado lateral en manga derecha' },
 ];
-
-const PRINT_PRICE = 6000;
 
 const COMUNAS_TEMUCO = [
   'Centro',
@@ -176,7 +174,7 @@ export default function ConfiguradorPremium() {
         ? printWidthRatioPct
         : printWidthRatioPct * 0.4; // manga
   
-  const unitPrice = base.price + PRINT_PRICE;
+  const unitPrice = base.price + placement.price;
   const subtotal = unitPrice * quantity;
   const isOutsideTemuco = city === 'otra';
   const shipping = isOutsideTemuco ? getShippingCost(quantity) : 0;
@@ -381,7 +379,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               </div>
             )}
 
-            {/* STEP 2: PRINT & PLACEMENT */}
+            {/* STEP 2: SELECCIÓN DE UBICACIÓN */}
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                 <button onClick={() => setStep(1)} className="flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-foreground mb-8 transition-colors">
@@ -389,47 +387,119 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 </button>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  {/* Print Selector */}
+                  {/* Placement Selector — panel central rediseñado */}
                   <div>
-                    <h3 className="font-mono text-sm text-muted-foreground mb-4">SELECCIONA EL GRÁFICO</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {PRINTS.map(p => (
-                        <button 
-                          key={p.id}
-                          onClick={() => setSelectedPrint(p.id)}
-                          className={`group text-left border p-2 transition-all ${selectedPrint === p.id ? 'border-accent' : 'border-border'}`}
-                        >
-                          <div className="aspect-[3/4] bg-muted mb-2 overflow-hidden">
-                            <img src={p.img} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                          </div>
-                          <h4 className="font-mono text-[10px] leading-tight font-bold">{p.name}</h4>
-                        </button>
-                      ))}
+                    <h3 className="font-mono text-sm text-muted-foreground mb-1">SELECCIONA UBICACIÓN</h3>
+                    <p className="font-mono text-[10px] text-muted-foreground/70 mb-6">El costo varía según la zona de impresión.</p>
+
+                    <div className="space-y-3">
+                      {PLACEMENTS.map(p => {
+                        const isSelected = selectedPlacement === p.id;
+                        return (
+                          <label
+                            key={p.id}
+                            className={`flex items-center gap-5 p-5 border cursor-pointer transition-all duration-200 group
+                              ${isSelected
+                                ? 'border-accent bg-accent/5 ring-1 ring-accent/40'
+                                : 'border-border hover:border-foreground/40'
+                              }`}
+                          >
+                            {/* Radio circle */}
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
+                              ${isSelected ? 'border-accent' : 'border-border group-hover:border-foreground/50'}`}
+                            >
+                              {isSelected && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                              )}
+                            </div>
+
+                            <input
+                              type="radio"
+                              name="placement"
+                              value={p.id}
+                              checked={isSelected}
+                              onChange={() => setSelectedPlacement(p.id)}
+                              className="sr-only"
+                            />
+
+                            {/* Label content */}
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-mono text-sm font-bold tracking-wider uppercase ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}>
+                                {p.name}
+                              </p>
+                              <p className="font-mono text-[11px] text-muted-foreground mt-0.5">{p.desc}</p>
+                            </div>
+
+                            {/* Price */}
+                            <div className="text-right shrink-0">
+                              <p className={`font-mono text-base font-bold ${isSelected ? 'text-accent' : 'text-foreground/70'}`}>
+                                {formatCLP(p.price)}
+                              </p>
+                              <p className="font-mono text-[10px] text-muted-foreground">CLP</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {/* Precio total calculado inline */}
+                    <div className="mt-6 p-4 border border-border/50 bg-muted/50 flex items-center justify-between">
+                      <div>
+                        <p className="font-mono text-[10px] text-muted-foreground">BASE + UBICACIÓN × {quantity} ud.</p>
+                        <p className="font-mono text-xs text-muted-foreground mt-0.5">
+                          ({formatCLP(base.price)} + {formatCLP(placement.price)}) × {quantity}
+                        </p>
+                      </div>
+                      <p className="font-mono text-xl font-bold">{formatCLP(subtotal)}</p>
                     </div>
                   </div>
 
-                  {/* Placement Selector */}
+                  {/* Panel derecho: resumen técnico de la ubicación */}
                   <div>
-                    <h3 className="font-mono text-sm text-muted-foreground mb-4">UBICACIÓN TÉCNICA</h3>
-                    <div className="space-y-3">
-                      {PLACEMENTS.map(p => (
-                        <button 
+                    <h3 className="font-mono text-sm text-muted-foreground mb-6">UBICACIÓN TÉCNICA</h3>
+
+                    {/* Card de ubicación activa */}
+                    <div className="border border-accent p-6 bg-accent/5 mb-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="font-mono text-[10px] text-muted-foreground mb-1">ZONA ACTIVA</p>
+                          <h4 className="font-bold text-2xl tracking-tighter uppercase">{placement.name}</h4>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono text-[10px] text-muted-foreground mb-1">COSTO</p>
+                          <p className="font-mono text-xl font-bold text-accent">{formatCLP(placement.price)}</p>
+                        </div>
+                      </div>
+                      <p className="font-mono text-xs text-muted-foreground border-t border-border/50 pt-4">{placement.desc}</p>
+                    </div>
+
+                    {/* Tabla comparativa de precios */}
+                    <div className="space-y-0 border border-border/40">
+                      {PLACEMENTS.map((p, i) => (
+                        <div
                           key={p.id}
-                          onClick={() => setSelectedPlacement(p.id)}
-                          className={`w-full flex items-center justify-between p-4 border transition-all ${selectedPlacement === p.id ? 'border-accent bg-accent/5' : 'border-border hover:border-foreground/50'}`}
+                          className={`flex items-center justify-between px-4 py-3 font-mono text-xs transition-colors
+                            ${p.id === selectedPlacement ? 'bg-accent/10 text-foreground' : 'text-muted-foreground'}
+                            ${i < PLACEMENTS.length - 1 ? 'border-b border-border/40' : ''}`}
                         >
-                          <span className="font-mono text-sm">{p.name}</span>
-                          <span className="font-mono text-xs text-muted-foreground">Incluido</span>
-                        </button>
+                          <div className="flex items-center gap-3">
+                            {p.id === selectedPlacement
+                              ? <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                              : <div className="w-3.5 h-3.5 rounded-full border border-border/60 shrink-0" />
+                            }
+                            <span className="font-bold uppercase tracking-wider">{p.name}</span>
+                          </div>
+                          <span className={p.id === selectedPlacement ? 'text-accent font-bold' : ''}>{formatCLP(p.price)}</span>
+                        </div>
                       ))}
                     </div>
 
-                    <div className="mt-8 p-6 bg-muted border border-border/50">
+                    <div className="mt-6 p-5 bg-muted border border-border/50">
                       <div className="flex items-start gap-4">
                         <Info className="w-5 h-5 text-accent shrink-0 mt-0.5" />
                         <div>
                           <h4 className="font-bold text-sm mb-1 uppercase tracking-tight">Inspección Manual</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">Cada impresión es curada térmicamente a 160°C y revisada bajo luz industrial para garantizar adherencia y fidelidad de color antes del empaque.</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">Cada impresión es curada a 160°C y revisada bajo luz industrial. Adherencia y fidelidad de color garantizadas.</p>
                         </div>
                       </div>
                     </div>
@@ -675,10 +745,10 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 </div>
               </div>
               <div>
-                <p className="font-mono text-[10px] text-muted-foreground mb-1">IMPRESIÓN</p>
+                <p className="font-mono text-[10px] text-muted-foreground mb-1">IMPRESIÓN — UBICACIÓN</p>
                 <div className="flex justify-between items-start">
-                  <p className="font-bold text-sm max-w-[70%]">{print.name} ({placement.name})</p>
-                  <p className="font-mono text-sm">+{formatCLP(PRINT_PRICE)}</p>
+                  <p className="font-bold text-sm max-w-[70%]">Estampado {placement.name}</p>
+                  <p className="font-mono text-sm">+{formatCLP(placement.price)}</p>
                 </div>
               </div>
               
