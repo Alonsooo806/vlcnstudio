@@ -44,8 +44,8 @@ const PRINTS = [
 
 const PLACEMENTS = [
   { id: 'pecho',   name: 'PECHO',   price: 10000, desc: 'Estampado frontal centrado sobre pecho' },
-  { id: 'espalda', name: 'ESPALDA', price: 4000,  desc: 'Estampado dorsal de gran formato' },
-  { id: 'manga',   name: 'MANGA',   price: 2000,  desc: 'Estampado lateral en manga derecha' },
+  { id: 'espalda', name: 'ESPALDA', price: 3500,  desc: 'Estampado dorsal de gran formato' },
+  { id: 'manga',   name: 'MANGA',   price: 1500,  desc: 'Estampado lateral en manga derecha' },
 ];
 
 const DELIVERY_COST = 2000; // CLP — costo fijo de delivery a domicilio en Temuco
