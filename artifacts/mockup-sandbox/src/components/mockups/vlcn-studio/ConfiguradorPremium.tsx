@@ -181,6 +181,7 @@ export default function ConfiguradorPremium() {
   const [showColorConfig, setShowColorConfig] = useState(true);
 
   const [uploadedDesign, setUploadedDesign] = useState<string | null>(null);
+  const [showNotaImportante, setShowNotaImportante] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
@@ -455,6 +456,40 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                         <p>{b.fitLabel}</p>
                         {b.id === 'tee' && <p>COLOR: {currentColor.name}</p>}
                       </div>
+
+                      {/* NOTA IMPORTANTE — solo para la tarjeta de subida */}
+                      {b.id === 'longsleeve' && (
+                        <div className="mt-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setShowNotaImportante(p => !p); }}
+                            className={`w-full flex items-center justify-between gap-2 px-4 py-3 font-mono text-xs font-bold tracking-wider transition-all
+                              ${showNotaImportante
+                                ? 'bg-accent text-white'
+                                : 'bg-accent/10 text-accent border border-accent/40 hover:bg-accent/20'}`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <FileImage className="w-3.5 h-3.5 shrink-0" />
+                              ⚠ NOTA IMPORTANTE — REQUISITOS DE TU ARCHIVO
+                            </span>
+                            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showNotaImportante ? 'rotate-90' : ''}`} />
+                          </button>
+
+                          {showNotaImportante && (
+                            <div className="border border-accent/30 border-t-0 bg-accent/5 p-4 space-y-2.5">
+                              <p className="text-xs font-medium leading-relaxed">
+                                Tu diseño debe ser <strong className="text-foreground">PNG a 300 PPP</strong> (puntos por pulgada) para garantizar un estampado nítido y profesional.
+                              </p>
+                              <ul className="text-xs text-muted-foreground space-y-1.5">
+                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Formato: <strong className="text-foreground">PNG</strong> (sin pérdida de calidad)</span></li>
+                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Resolución mínima: <strong className="text-foreground">300 DPI / 300 PPP</strong></span></li>
+                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Fondo transparente recomendado</span></li>
+                                <li className="flex items-start gap-2"><X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" /><span>No JPG, capturas de pantalla ni imágenes pixeladas</span></li>
+                                <li className="flex items-start gap-2"><X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" /><span>Baja resolución = estampado borroso, sin excepciones</span></li>
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -779,22 +814,6 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     <div>
                       <h4 className="font-mono text-xs font-bold mb-1">RESISTENCIA</h4>
                       <p className="text-sm">Curado a 160°C. Resiste fricción mecánica y lavados abrasivos sin craquelado prematuro.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 items-start pb-4">
-                    <FileImage className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-mono text-xs font-bold mb-1 text-accent">⚠ REQUISITO DE ARCHIVO — OBLIGATORIO</h4>
-                      <p className="text-sm font-medium mb-2">
-                        Tu diseño debe enviarse en formato <span className="font-bold text-foreground">PNG</span> con una resolución mínima de <span className="font-bold text-foreground">300 PPP (puntos por pulgada)</span>.
-                      </p>
-                      <ul className="text-xs text-muted-foreground space-y-1 list-none">
-                        <li className="flex items-start gap-1.5"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /> Formato aceptado: <strong className="text-foreground ml-1">PNG</strong> (sin compresión con pérdida)</li>
-                        <li className="flex items-start gap-1.5"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /> Resolución mínima: <strong className="text-foreground ml-1">300 DPI / 300 PPP</strong></li>
-                        <li className="flex items-start gap-1.5"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /> Fondo transparente recomendado para mejor resultado de estampado</li>
-                        <li className="flex items-start gap-1.5"><X className="w-3 h-3 text-destructive shrink-0 mt-0.5" /> No se aceptan JPG, capturas de pantalla ni imágenes de baja resolución</li>
-                        <li className="flex items-start gap-1.5"><X className="w-3 h-3 text-destructive shrink-0 mt-0.5" /> Archivos de baja calidad resultarán en estampado borroso o pixelado</li>
-                      </ul>
                     </div>
                   </div>
                 </div>
