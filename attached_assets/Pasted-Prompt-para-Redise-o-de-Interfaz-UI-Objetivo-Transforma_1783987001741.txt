@@ -1,0 +1,50 @@
+Prompt para Rediseño de Interfaz (UI)
+Objetivo: Transformar la apariencia visual de la página de inicio actual (Imagen 2) para adoptar un estilo moderno, limpio y sofisticado, fusionando la elegancia tipográfica de la web "Kinetic" (Imagen 1) y el diseño de tarjeta flotante de la web "Joker" (Imagen 2).
+
+Instrucciones Clave:
+
+MANTENER TODO EL CONTENIDO TEXTUAL Y FUNCIONAL (todos los textos, el botón "PERSONALIZA AQUÍ", los enlaces del footer y el carrusel de camisetas).
+
+NUEVA PALETA DE COLORES: Usar un esquema de tonos neutros: Fondo blanco puro o gris muy claro (#F8F9FA), tipografía negra para cuerpo de texto, y un acento de color rojo vibrante (inspirado en la web Kinetic) para elementos interactivos clave (botón, viñetas, icono de ubicación).
+
+ESTILO TIPOGRÁFICO:
+
+Título Principal ("LÍDER EN DISEÑOS..."): Usar una tipografía sans-serif geométrica o neo-grotesca moderna (similar a la web Kinetic), en negrita (Bold), con un tamaño grande y un line-height (interlineado) reducido para crear impacto visual.
+
+Cuerpo de Texto: Usar la misma tipografía, pero más ligera (Regular) y con un tamaño cómodo para la lectura.
+
+Elementos de Navegación: Usar la misma tipografía en un peso medio (Medium) y mayúsculas.
+
+Estructura y Layout Detallado:
+
+Encabezado (Header):
+
+Simplificar el encabezado. Alinear el logo "VLCN STUDIO" a la izquierda y los enlaces de navegación ("TALLER TÉCNICO V1.0", etc.) a la derecha, usando la nueva tipografía y color.
+
+Eliminar el icono de usuario y el botón flotante "Made with Replit" de la esquina inferior.
+
+Contenido Principal (Main Section):
+
+Fondo: Utilizar el fondo blanco/gris claro limpio en toda la sección.
+
+Columna Izquierda (Texto): Organizar el texto existente exactamente en el mismo orden, pero con la nueva tipografía (Título grande y audaz, texto de párrafo legible).
+
+El Botón: El botón "PERSONALIZA AQUÍ" debe conservar su texto, pero cambiar su estilo: usar el color de fondo negro con texto blanco, o el color de acento rojo con texto blanco, para que resalte.
+
+Viñetas del Pie de Página: Los tres puntos del pie de página ("Ficha Técnica", etc.) deben adoptar la nueva tipografía y el icono de viñeta puede ser de color rojo.
+
+Columna Derecha (Visual):
+
+Extraer el carrusel de camisetas del layout de cuadrícula.
+
+Presentarlo dentro de una "tarjeta flotante" moderna y elevada, similar a la tarjeta del Joker en la Imagen 2. Esta tarjeta debe tener bordes redondeados, una sombra suave y sutil para dar profundidad, y un fondo blanco.
+
+La tarjeta flotante debe contener únicamente el carrusel de camisetas, eliminando los bordes blancos de la foto original y centrando la atención en las prendas.
+
+Los botones de navegación del carrusel ("<" y ">") deben integrarse elegantemente en los lados de la tarjeta flotante, usando el color de acento rojo.
+
+Footer (Pie de Página):
+
+Asegurarse de que los enlaces ("Términos de servicio", "Politica de privacidad") estén presentes y alineados, usando la tipografía y color correctos.
+
+Resultado Esperado: Una página web minimalista pero impactante, donde el texto grande y audaz en la columna izquierda guía la mirada, y el carrusel de productos se presenta como un objeto de diseño premium y elevado en una tarjeta flotante sobre el fondo limpio.

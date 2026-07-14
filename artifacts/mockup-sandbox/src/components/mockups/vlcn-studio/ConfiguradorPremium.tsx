@@ -3,7 +3,7 @@ import {
   ChevronRight, ChevronLeft, ArrowRight, ArrowLeft,
   CheckCircle2, Ruler, Droplets, Info, Plus, Minus,
   MessageCircle, X, Check, Save, Share2, Package, Eye,
-  ShieldCheck, ArrowUpRight, MapPin, Upload, Mail, Send
+  ShieldCheck, ArrowUpRight, MapPin, Upload, Mail, Send, FileImage
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -779,6 +779,22 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     <div>
                       <h4 className="font-mono text-xs font-bold mb-1">RESISTENCIA</h4>
                       <p className="text-sm">Curado a 160°C. Resiste fricción mecánica y lavados abrasivos sin craquelado prematuro.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start pb-4">
+                    <FileImage className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-mono text-xs font-bold mb-1 text-accent">⚠ REQUISITO DE ARCHIVO — OBLIGATORIO</h4>
+                      <p className="text-sm font-medium mb-2">
+                        Tu diseño debe enviarse en formato <span className="font-bold text-foreground">PNG</span> con una resolución mínima de <span className="font-bold text-foreground">300 PPP (puntos por pulgada)</span>.
+                      </p>
+                      <ul className="text-xs text-muted-foreground space-y-1 list-none">
+                        <li className="flex items-start gap-1.5"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /> Formato aceptado: <strong className="text-foreground ml-1">PNG</strong> (sin compresión con pérdida)</li>
+                        <li className="flex items-start gap-1.5"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /> Resolución mínima: <strong className="text-foreground ml-1">300 DPI / 300 PPP</strong></li>
+                        <li className="flex items-start gap-1.5"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /> Fondo transparente recomendado para mejor resultado de estampado</li>
+                        <li className="flex items-start gap-1.5"><X className="w-3 h-3 text-destructive shrink-0 mt-0.5" /> No se aceptan JPG, capturas de pantalla ni imágenes de baja resolución</li>
+                        <li className="flex items-start gap-1.5"><X className="w-3 h-3 text-destructive shrink-0 mt-0.5" /> Archivos de baja calidad resultarán en estampado borroso o pixelado</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
