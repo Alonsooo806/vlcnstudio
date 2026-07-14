@@ -477,7 +477,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                           {showNotaImportante && (
                             <div className="border border-accent/30 border-t-0 bg-accent/5 p-4 space-y-2.5">
                               <p className="text-xs font-medium leading-relaxed">
-                                Tu diseño debe ser <strong className="text-foreground">PNG a 300 PPP</strong> (puntos por pulgada) para garantizar un estampado nítido y profesional.
+                                Tu diseño debe ser <strong className="text-foreground">PNG a 300 PPP</strong> (píxeles por pulgada) para garantizar un estampado nítido y profesional.
                               </p>
                               <ul className="text-xs text-muted-foreground space-y-1.5">
                                 <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Formato: <strong className="text-foreground">PNG</strong> (sin pérdida de calidad)</span></li>
