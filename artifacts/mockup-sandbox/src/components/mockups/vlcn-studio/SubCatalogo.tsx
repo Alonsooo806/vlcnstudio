@@ -126,9 +126,8 @@ const TEMAS: Record<CatId, {
       </div>
     ),
     citas: [
-      { texto: '"Yo le hice una oferta que no pudo rechazar."', autor: 'El Padrino, 1972' },
-      { texto: '"Soy quien llama a la puerta."', autor: 'Breaking Bad' },
-      { texto: '"¿Por qué tan serio?"', autor: 'The Dark Knight, 2008' },
+      { texto: '"Lo que hacemos en la vida tiene su eco en la eternidad."', autor: 'Gladiador' },
+      { texto: '"Yo soy el que llama."', autor: 'Breaking Bad' },
     ],
   },
 };
@@ -296,14 +295,19 @@ export default function SubCatalogo() {
 
         {/* CITAS — solo Películas & Series */}
         {tema.citas && tema.citas.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-4">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-px border border-amber-500/15">
             {tema.citas.map((c, i) => (
               <blockquote
                 key={i}
-                className="border-l-2 border-amber-500/40 pl-3 max-w-xs"
+                className="flex flex-col justify-between gap-3 p-6 border-amber-500/15 bg-amber-500/[0.03]"
+                style={{ borderRight: i === 0 ? '1px solid rgba(245,158,11,0.15)' : 'none' }}
               >
-                <p className="text-amber-200/70 text-xs italic leading-relaxed">{c.texto}</p>
-                <cite className="font-mono text-[10px] text-zinc-600 not-italic">— {c.autor}</cite>
+                <p className="text-amber-100/80 text-xl md:text-2xl italic leading-snug font-serif">
+                  {c.texto}
+                </p>
+                <cite className="font-mono text-xs text-amber-500/60 not-italic tracking-widest">
+                  — {c.autor}
+                </cite>
               </blockquote>
             ))}
           </div>
