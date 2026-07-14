@@ -40,7 +40,7 @@ const CATALOGO_DEPORTE: Producto[] = [
 ];
 
 const CATALOGO_ARTISTAS: Producto[] = [
-  { id: 'a1', titulo: 'Bad Bunny — Un Verano Sin Ti', precio: 15000, stock: true,  stockQty: 7,  placeholderBg: '#1a0033', placeholderEmoji: '🐰', tag: 'TOP' },
+  { id: 'a1', titulo: 'Billie Eilish — Happier Than Ever', precio: 15000, stock: true, stockQty: 7, placeholderBg: '#1a0033', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784044291/davinci__img1_ahora_usando_un_modelo_de_referencia_sobre_u_rzpo85.png', tag: 'TOP' },
   { id: 'a2', titulo: 'The Weeknd',                   precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#1a0008', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784043224/ChatGPT_Image_14_jul_2026_11_32_37_a.m_eev1or.png', tag: 'POPULAR' },
   { id: 'a3', titulo: 'Daddy Yankee — Gasolina',      precio: 15000, stock: true,  stockQty: 4,  placeholderBg: '#1a0d00', placeholderEmoji: '🎤' },
   { id: 'a4', titulo: 'Drake — Certified Lover Boy',  precio: 15000, stock: false,              placeholderBg: '#000d1a', placeholderEmoji: '🦉' },
