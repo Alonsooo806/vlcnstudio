@@ -6,6 +6,7 @@ import ConfiguradorPremium from "./components/mockups/vlcn-studio/ConfiguradorPr
 import Categorias from "./components/mockups/vlcn-studio/Categorias";
 import SubCatalogo from "./components/mockups/vlcn-studio/SubCatalogo";
 import WhatsAppButton from "./components/mockups/vlcn-studio/WhatsAppButton";
+import TerminosCondiciones from "./components/mockups/vlcn-studio/TerminosCondiciones";
 
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 
@@ -133,7 +134,7 @@ function getPreviewPath(): string | null {
   return match ? match[1] : null;
 }
 
-function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" | null {
+function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" | "terminos" | null {
   const basePath = getBasePath();
   const { pathname } = window.location;
   const local =
@@ -145,6 +146,7 @@ function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" 
   if (local === "/configurador") return "configurador";
   if (local === "/categorias") return "categorias";
   if (local.startsWith("/categorias/")) return "subcatalogo";
+  if (local === "/terminos") return "terminos";
   return null;
 }
 
@@ -165,6 +167,7 @@ function App() {
   if (siteRoute === "configurador") return <><ConfiguradorPremium /><WhatsAppButton /></>;
   if (siteRoute === "categorias") return <><Categorias /><WhatsAppButton /></>;
   if (siteRoute === "subcatalogo") return <><SubCatalogo /><WhatsAppButton /></>;
+  if (siteRoute === "terminos") return <TerminosCondiciones />;
 
   return <Gallery />;
 }

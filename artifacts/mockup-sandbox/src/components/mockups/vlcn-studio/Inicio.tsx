@@ -110,6 +110,21 @@ export default function Inicio() {
       </section>
 
       <Footer />
+
+      {/* LETRA CHICA */}
+      <div className="px-8 md:px-20 py-4 border-t border-white/5 text-center"
+        style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <p className="text-white/25 text-xs font-mono leading-relaxed">
+          Al usar este sitio aceptas nuestros{' '}
+          <a
+            href="/terminos"
+            className="underline underline-offset-2 hover:text-white/50 transition-colors"
+          >
+            TÉRMINOS Y CONDICIONES
+          </a>
+          {' '}· VLCN Studio · Temuco, Chile
+        </p>
+      </div>
     </div>
   );
 }

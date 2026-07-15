@@ -6,5 +6,6 @@ export const modules: ModuleMap = {
   "./components/mockups/vlcn-studio/Footer.tsx": () => import("../components/mockups/vlcn-studio/Footer.tsx"),
   "./components/mockups/vlcn-studio/Inicio.tsx": () => import("../components/mockups/vlcn-studio/Inicio.tsx"),
   "./components/mockups/vlcn-studio/SubCatalogo.tsx": () => import("../components/mockups/vlcn-studio/SubCatalogo.tsx"),
+  "./components/mockups/vlcn-studio/TerminosCondiciones.tsx": () => import("../components/mockups/vlcn-studio/TerminosCondiciones.tsx"),
   "./components/mockups/vlcn-studio/WhatsAppButton.tsx": () => import("../components/mockups/vlcn-studio/WhatsAppButton.tsx")
 };
