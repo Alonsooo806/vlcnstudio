@@ -7,6 +7,7 @@ import {
   ShoppingCart, Trash2
 } from 'lucide-react';
 import { cartStore, type CartItem } from './cartStore';
+import { navTo, navigate } from './navigate';
 
 // --- MOCK DATA ---
 const BASES = [
@@ -316,7 +317,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
       {/* HEADER */}
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-border/40 px-6 py-4 flex items-center justify-between">
         <button
-          onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+          onClick={() => navTo('')}
           className="flex items-center gap-3 hover:opacity-70 transition-opacity"
         >
           <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-8 w-auto object-contain" />
@@ -339,13 +340,13 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
       {/* NAVEGACIÓN DE RETORNO */}
       <div className="flex gap-3 px-6 md:px-12 py-3 border-b border-border/40 bg-background">
         <button
-          onClick={() => { window.location.href = `${import.meta.env.BASE_URL}categorias`; }}
+          onClick={() => navTo('categorias')}
           className="flex items-center gap-2 border border-border px-4 py-2 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors"
         >
           ← VOLVER A CATEGORÍAS
         </button>
         <button
-          onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+          onClick={() => navTo('')}
           className="flex items-center gap-2 bg-foreground text-background px-4 py-2 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors"
         >
           ⌂ IR AL INICIO
@@ -902,13 +903,13 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 {/* NAVEGACIÓN DE RETORNO */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/40">
                   <button
-                    onClick={() => { window.location.href = `${import.meta.env.BASE_URL}categorias`; }}
+                    onClick={() => navTo('categorias')}
                     className="flex-1 flex items-center justify-center gap-2 border border-border py-3 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors"
                   >
                     ← VOLVER A CATEGORÍAS
                   </button>
                   <button
-                    onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+                    onClick={() => navTo('')}
                     className="flex-1 flex items-center justify-center gap-2 bg-foreground text-background py-3 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors"
                   >
                     ⌂ IR AL INICIO
@@ -1224,7 +1225,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               >
                 <Save className="w-5 h-5" />
               </button>
-              <button onClick={() => { window.location.href = 'https://www.webpay.transbank.cl'; }} className="bg-foreground text-background font-mono text-sm h-12 lg:h-14 px-6 flex-1 flex items-center justify-center gap-2 hover:bg-accent transition-colors group">
+              <button onClick={() => navigate('https://www.webpay.transbank.cl', true)} className="bg-foreground text-background font-mono text-sm h-12 lg:h-14 px-6 flex-1 flex items-center justify-center gap-2 hover:bg-accent transition-colors group">
                 <span className="hidden sm:inline">FINALIZAR COMPRA</span>
                 <span className="sm:hidden">PAGAR</span>
                 <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ShoppingBag, CheckCircle2, XCircle, Star, ShoppingCart, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { cartStore } from './cartStore';
+import { navTo } from './navigate';
 
 const BASE = import.meta.env.BASE_URL;
 const TALLAS = ['S', 'M', 'L', 'XL', '2XL'] as const;
@@ -411,7 +412,7 @@ export default function SubCatalogo() {
       {/* HEADER */}
       <header className={`sticky top-0 z-40 backdrop-blur-md border-b ${tema.headerBg} px-6 py-4 flex items-center justify-between`}>
         <button
-          onClick={() => { window.location.href = `${BASE}categorias`; }}
+          onClick={() => navTo('categorias')}
           className="flex items-center gap-2 font-mono text-xs text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -424,7 +425,7 @@ export default function SubCatalogo() {
 
         {/* CARRITO */}
         <button
-          onClick={() => { window.location.href = `${BASE}configurador`; }}
+          onClick={() => navTo('configurador')}
           className="relative flex items-center gap-2 font-mono text-xs transition-colors hover:text-white"
           style={{ color: cartCount > 0 ? tema.accentHex : '#71717a' }}
           title="Ver carrito en el configurador"
@@ -455,7 +456,7 @@ export default function SubCatalogo() {
             <p className="font-mono text-xs text-zinc-500 tracking-widest">{tema.tagline}</p>
           </div>
           <button
-            onClick={() => { window.location.href = `${BASE}categorias`; }}
+            onClick={() => navTo('categorias')}
             className="flex items-center gap-2 border border-white/15 px-5 py-2.5 font-mono text-xs font-bold tracking-wider text-zinc-300 hover:bg-white/10 hover:text-white transition-all w-fit shrink-0 mt-1"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -536,7 +537,7 @@ export default function SubCatalogo() {
               </div>
             </div>
             <button
-              onClick={() => { window.location.href = `${BASE}configurador`; }}
+              onClick={() => navTo('configurador')}
               className="flex items-center gap-2 px-5 py-3 font-mono text-xs font-bold tracking-wide shrink-0 transition-all hover:brightness-110"
               style={{ background: tema.accentHex, color: '#000' }}
             >
@@ -555,7 +556,7 @@ export default function SubCatalogo() {
           TODAS LAS PRENDAS SON CAMISETA MANGA CORTA 100% ALGODÓN · ESTAMPADO INDUSTRIAL
         </p>
         <button
-          onClick={() => { window.location.href = `${BASE}categorias`; }}
+          onClick={() => navTo('categorias')}
           className="flex items-center gap-2 font-mono text-xs text-zinc-500 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />

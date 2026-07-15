@@ -183,3 +183,36 @@
     pointer-events: none;
   }
 }
+
+/* ─── PAGE TRANSITIONS ───────────────────────────────────────────────── */
+@keyframes vlcn-page-enter {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes vlcn-page-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+#root {
+  animation: vlcn-page-enter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html.page-exiting #root {
+  animation: vlcn-page-exit 0.24s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none;
+}
+/* ───────────────────────────────────────────────────────────────────── */

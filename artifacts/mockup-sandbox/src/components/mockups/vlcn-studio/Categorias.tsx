@@ -1,9 +1,8 @@
 import React from 'react';
 import { ArrowLeft, ArrowRight, Trophy, Music2, Film, Pencil } from 'lucide-react';
+import { navTo } from './navigate';
 
-const BASE = import.meta.env.BASE_URL;
-
-const nav = (path: string) => { window.location.href = `${BASE}${path}`; };
+const nav = (path: string) => navTo(path);
 
 const CATS = [
   {

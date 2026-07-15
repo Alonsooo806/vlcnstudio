@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, ChevronRight, ShieldCheck, Ruler, Droplets } from 'lucide-react';
+import { navTo } from './navigate';
 
 const SLIDES = [
   `${import.meta.env.BASE_URL}generated_images/vlcn-inicio-slide-1.jpg`,
@@ -100,9 +101,7 @@ function BgDecor() {
 export default function Inicio() {
   const [slide, setSlide] = useState(0);
 
-  const goToConfigurador = () => {
-    window.location.href = `${import.meta.env.BASE_URL}categorias`;
-  };
+  const goToConfigurador = () => navTo('categorias');
 
   const nextSlide = () => setSlide((prev) => (prev + 1) % SLIDES.length);
 
