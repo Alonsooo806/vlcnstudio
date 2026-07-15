@@ -109,11 +109,9 @@ export default function Inicio() {
         </a>
       </section>
 
-      <Footer />
-
       {/* LETRA CHICA */}
-      <div className="px-8 md:px-20 py-4 border-t border-white/5 text-center"
-        style={{ background: 'rgba(0,0,0,0.4)' }}>
+      <div className="px-8 md:px-20 py-3 text-center border-t border-white/5"
+        style={{ background: 'rgba(0,0,0,0.35)' }}>
         <p className="text-white/25 text-xs font-mono leading-relaxed">
           Al usar este sitio aceptas nuestros{' '}
           <a
@@ -125,6 +123,8 @@ export default function Inicio() {
           {' '}· VLCN Studio · Temuco, Chile
         </p>
       </div>
+
+      <Footer />
     </div>
   );
 }
