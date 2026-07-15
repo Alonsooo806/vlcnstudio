@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ChevronRight, ChevronLeft, ArrowRight, ArrowLeft,
   CheckCircle2, Ruler, Droplets, Info, Plus, Minus,
-  MessageCircle, X, Check, Save, Share2, Package, Eye,
-  ShieldCheck, ArrowUpRight, MapPin, Upload, Mail, Send, FileImage,
+  X, Check, Save, Package, Eye,
+  ShieldCheck, ArrowUpRight, MapPin, Upload, FileImage,
   ShoppingCart, Trash2
 } from 'lucide-react';
 import { cartStore, type CartItem } from './cartStore';
 import { navTo, navigate } from './navigate';
+import Footer from './Footer';
 
 // --- MOCK DATA ---
 const BASES = [
@@ -51,16 +52,14 @@ const PLACEMENTS = [
   { id: 'manga',   name: 'MANGA',   price: 1500,  desc: 'Estampado lateral en manga derecha' },
 ];
 
-const DELIVERY_COST = 2000; // CLP — costo fijo de delivery a domicilio en Temuco
+const DELIVERY_COST = 2000;
+const WA_NUMBER = '56965536529';
 
 const formatCLP = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
 // ---------- COLORIZACIÓN REALISTA POR CANVAS ----------
-// Discrimina píxeles neutros (camiseta) de píxeles cálidos/saturados (madera) por saturación HSV.
-// Solo los píxeles con baja saturación (<0.28) reciben el tinte via multiply.
-// El fondo de madera y cualquier elemento con color propio quedan completamente inalterados.
 const SHIRT_BASE_SRC = 'generated_images/vlcn-shirt-blanco.png';
-const _colorizeCache = new Map<string, string>(); // dataURL por hex — persiste entre renders
+const _colorizeCache = new Map<string, string>();
 
 async function colorizeShirt(colorHex: string): Promise<string> {
   if (_colorizeCache.has(colorHex)) return _colorizeCache.get(colorHex)!;
@@ -75,7 +74,6 @@ async function colorizeShirt(colorHex: string): Promise<string> {
       if (!ctx) { resolve(SHIRT_BASE_SRC); return; }
       ctx.drawImage(img, 0, 0);
 
-      // Blanco: no requiere tinte — camiseta ya es blanca
       if (colorHex === '#FFFFFF' || colorHex === '#ffffff') {
         const url = canvas.toDataURL('image/jpeg', 0.92);
         _colorizeCache.set(colorHex, url);
@@ -83,7 +81,6 @@ async function colorizeShirt(colorHex: string): Promise<string> {
         return;
       }
 
-      // Negro: usar casi-negro para preservar volumen 3D (no pitch-black total)
       const effectiveHex = colorHex === '#000000' ? '#141414' : colorHex;
       const cr = parseInt(effectiveHex.slice(1, 3), 16) / 255;
       const cg = parseInt(effectiveHex.slice(3, 5), 16) / 255;
@@ -93,20 +90,17 @@ async function colorizeShirt(colorHex: string): Promise<string> {
       const data = imageData.data;
 
       for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] === 0) continue;          // transparente: skip
+        if (data[i + 3] === 0) continue;
         const pr = data[i], pg = data[i + 1], pb = data[i + 2];
         const maxCh = Math.max(pr, pg, pb);
         const minCh = Math.min(pr, pg, pb);
-        // Saturación HSV: 0 = neutro (gris/blanco = tela), 1 = muy saturado (madera/color)
         const sat = maxCh === 0 ? 0 : (maxCh - minCh) / maxCh;
 
         if (sat < 0.28) {
-          // Tela: aplicar multiply — preserva pliegues y sombras naturalmente
           data[i]     = Math.round(pr * cr);
           data[i + 1] = Math.round(pg * cg);
           data[i + 2] = Math.round(pb * cb);
         }
-        // else: pixel de fondo (madera, borde, etc.) — se conserva sin modificación
       }
 
       ctx.putImageData(imageData, 0, 0);
@@ -118,13 +112,9 @@ async function colorizeShirt(colorHex: string): Promise<string> {
     img.src = SHIRT_BASE_SRC;
   });
 }
-// -------------------------------------------------------
-
 
 const SIZES = ['S', 'M', 'L', 'XL', '2XL'];
 
-// Tabla de Escalamiento de Estampado (ancho x alto en cm sobre la prenda)
-// Valores físicos reales según estándar americano (especificación oficial VLCN Studio)
 const PRINT_DIMENSIONS_BY_TALLA: Record<string, { w: number; h: number; requiresA3?: boolean }> = {
   S:    { w: 25, h: 35 },
   M:    { w: 28, h: 38 },
@@ -137,23 +127,11 @@ const PRINT_SIZE_BY_TALLA: Record<string, string> = Object.fromEntries(
 );
 const LOGO_PECHO_SIZE = '10 × 10 cm';
 
-// Ancho real de la prenda (a lo ancho de pecho, extendida) por talla, en cm.
 const GARMENT_WIDTH_BY_TALLA: Record<string, number> = {
-  S: 50,
-  M: 52,
-  L: 54,
-  XL: 57,
-  '2XL': 60,
+  S: 50, M: 52, L: 54, XL: 57, '2XL': 60,
 };
 
-// Regla de oro: el estampado "grande" ocupa siempre ~50-55% del ancho de la prenda,
-// sin importar la talla, de modo que la presencia visual del diseño se perciba idéntica
-// en todas las tallas (crece en cm absolutos, pero mantiene la misma proporción relativa).
-// Esto también garantiza un margen libre de al menos 10cm a cada lado (costuras laterales).
 const getPrintWidthRatio = (talla: string) => PRINT_DIMENSIONS_BY_TALLA[talla].w / GARMENT_WIDTH_BY_TALLA[talla];
-
-// Escala relativa (ancho y alto) del estampado según talla, tomando Talla M (27x37cm) como referencia base.
-// Se usa únicamente para el alto (que no está definido como % de la prenda), y mantiene el centro fijo.
 const PRINT_REF = PRINT_DIMENSIONS_BY_TALLA.M;
 const getPrintScale = (talla: string) => ({
   x: PRINT_DIMENSIONS_BY_TALLA[talla].w / PRINT_REF.w,
@@ -169,34 +147,19 @@ export default function ConfiguradorPremium() {
   const [placementsConfirmed, setPlacementsConfirmed] = useState(false);
   const [size, setSize] = useState('L');
   const [quantity, setQuantity] = useState(1);
-  
   const [savedConfigs, setSavedConfigs] = useState<any[]>([]);
   const [showSavedToast, setShowSavedToast] = useState(false);
-  
-  const [waModalOpen, setWaModalOpen] = useState(false);
-  const [waForm, setWaForm] = useState({ intent: '', deadline: '', qty: '' });
-
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
-
-
   const [selectedColor, setSelectedColor] = useState('blanco');
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [showColorConfig, setShowColorConfig] = useState(true);
-
   const [uploadedDesign, setUploadedDesign] = useState<string | null>(null);
   const [showNotaImportante, setShowNotaImportante] = useState(false);
+  const [showScaleInline, setShowScaleInline] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const [gmailModalOpen, setGmailModalOpen] = useState(false);
-  const [colorActivelyChosen, setColorActivelyChosen] = useState(false);
-  const [showScaleModal, setShowScaleModal] = useState(false);
-
   const [cartItems, setCartItems] = useState<CartItem[]>(() => cartStore.get());
-
-  // Mapa hex → dataURL de la camiseta coloreada por canvas
   const [colorizedUrls, setColorizedUrls] = useState<Record<string, string>>({});
 
-  // Pre-computa todos los colores en segundo plano al montar
   useEffect(() => {
     let cancelled = false;
     const preload = async () => {
@@ -223,7 +186,6 @@ export default function ConfiguradorPremium() {
   // --- DERIVED STATE ---
   const base = BASES.find(b => b.id === selectedBase)!;
   const print = PRINTS.find(p => p.id === selectedPrint)!;
-  // Multi-placement support
   const placements = PLACEMENTS.filter(p => selectedPlacements.includes(p.id));
   const placementsTotal = placements.reduce((sum, p) => sum + p.price, 0);
   const primaryPlacement = placements[0] || PLACEMENTS[0];
@@ -231,23 +193,18 @@ export default function ConfiguradorPremium() {
   const currentColor = COLORS[colorIndex];
   const previewColor = COLORS.find(c => c.id === hoveredColor) || currentColor;
   const nextColor = () => setSelectedColor(COLORS[(colorIndex + 1) % COLORS.length].id);
-  const viewerImg = previewColor.img;
-  // El estampado de un diseño propio subido por el cliente siempre sigue la Tabla de Escalamiento
-  // completa (S 25×35 … 2XL 33×43), sin excepción de tamaño fijo. La excepción de logo fijo
-  // (10×10cm) sólo aplica al placement "pecho" cuando se usa un gráfico de catálogo pequeño.
+
   const isPechoLogoFijo = selectedPlacements.includes('pecho') && !uploadedDesign;
   const printMeasure = isPechoLogoFijo ? LOGO_PECHO_SIZE : PRINT_SIZE_BY_TALLA[size];
   const printScale = isPechoLogoFijo ? { x: 1, y: 1 } : getPrintScale(size);
-  // Regla de oro: el ancho visible del estampado se mantiene siempre ~50-55% del ancho de la
-  // prenda (constante en todas las tallas), dejando siempre ≥10cm libres a cada costura lateral.
   const printWidthRatioPct = getPrintWidthRatio(size) * 100;
   const printWidthPercent = isPechoLogoFijo
-    ? 20 // logo fijo de catálogo (10×10cm), ancho de display constante independiente de la talla
+    ? 20
     : primaryPlacement.id === 'pecho'
       ? printWidthRatioPct * 0.6
       : primaryPlacement.id === 'espalda'
         ? printWidthRatioPct
-        : printWidthRatioPct * 0.4; // manga
+        : printWidthRatioPct * 0.4;
 
   const togglePlacement = (id: string) => {
     setSelectedPlacements(prev =>
@@ -261,58 +218,20 @@ export default function ConfiguradorPremium() {
   const shipping = deliveryMethod === 'delivery' ? DELIVERY_COST : 0;
   const total = subtotal + shipping;
 
-  // --- HANDLERS ---
   const handleSaveConfig = () => {
     setSavedConfigs(prev => [...prev, { base, print, placements, size, quantity }]);
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 3000);
   };
 
-  const handleGmailSend = () => {
-    const subject = encodeURIComponent('Solicitud de diseño asistido');
-    const placementLines = placements.map(p => `  · ${p.name}: ${formatCLP(p.price)}`).join('\n');
-    const body = encodeURIComponent(
-`Hola VLCN STUDIO 👋
-
-Quiero realizar una solicitud para mi camiseta personalizada.
-
-🎨 COLOR: ${currentColor.name}
-📐 TALLA: ${size}
-📦 CANTIDAD: ${quantity}
-
---- DESCRIPCIÓN DE LA IDEA ---
-(Describe tu idea, logo o referencias aquí)
-
---- DETALLES TÉCNICOS ---
-Ubicaciones seleccionadas:
-${placementLines}
-Total ubicaciones: ${formatCLP(placementsTotal)}
-Fecha límite:
-Uso:
-
-Gracias!`
-    );
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=alonsoovalentino%40gmail.com&su=${subject}&body=${body}`;
-    window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-    setGmailModalOpen(false);
-  };
-
-  const handleWAContact = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleWhatsAppContact = () => {
     const placementNames = placements.map(p => p.name).join(', ') || 'Sin ubicación';
-    const text = `Hola VLCN STUDIO. Me interesa una colaboración técnica.
-- Uso: ${waForm.intent}
-- Fecha límite: ${waForm.deadline}
-- Cantidad aprox: ${waForm.qty}
-
-Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placementNames}.`;
-    
-    window.open(`https://wa.me/56965536529?text=${encodeURIComponent(text)}`, '_blank');
-    setWaModalOpen(false);
+    const text = `Hola VLCN Studio 👋 Me interesa una camiseta personalizada.\n\n🎨 Color: ${currentColor.name}\n📐 Talla: ${size}\n📦 Cantidad: ${quantity}\n📍 Estampado: ${placementNames}\n💰 Total estimado: ${formatCLP(total)}\n\n¿Podemos coordinar el pedido?`;
+    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-accent selection:text-white pb-32 lg:pb-0">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-accent selection:text-white">
       
       {/* HEADER */}
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-border/40 px-6 py-4 flex items-center justify-between">
@@ -324,10 +243,14 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           <h1 className="font-bold tracking-tighter text-xl">VLCN STUDIO</h1>
         </button>
         <div className="flex items-center gap-6 text-sm font-mono">
-          <span className="hidden md:inline-flex text-muted-foreground">TALLER TÉCNICO V1.0</span>
-          <button className="flex items-center gap-2 hover:text-accent transition-colors relative">
+          <span className="hidden md:inline-flex text-muted-foreground">TALLER TÉCNICO</span>
+          <button
+            className="flex items-center gap-2 hover:text-accent transition-colors relative"
+            onClick={handleSaveConfig}
+            title="Guardar configuración"
+          >
             <Save className="w-4 h-4" />
-            <span>WISHLIST</span>
+            <span className="hidden sm:inline">GUARDAR</span>
             {savedConfigs.length > 0 && (
               <span className="absolute -top-2 -right-3 bg-accent text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                 {savedConfigs.length}
@@ -343,17 +266,17 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           onClick={() => navTo('categorias')}
           className="flex items-center gap-2 border border-border px-4 py-2 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors"
         >
-          ← VOLVER A CATEGORÍAS
+          ← CATEGORÍAS
         </button>
         <button
           onClick={() => navTo('')}
           className="flex items-center gap-2 bg-foreground text-background px-4 py-2 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors"
         >
-          ⌂ IR AL INICIO
+          ⌂ INICIO
         </button>
       </div>
 
-      {/* TOAST NOTIFICATION */}
+      {/* TOAST */}
       <div className={`fixed top-20 right-6 z-50 bg-foreground text-background px-4 py-3 shadow-2xl flex items-center gap-3 transition-all duration-300 transform ${showSavedToast ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
         <CheckCircle2 className="w-4 h-4 text-accent" />
         <span className="font-mono text-xs">CONFIGURACIÓN GUARDADA</span>
@@ -361,21 +284,21 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
 
       <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-start relative">
         
-        {/* LEFT COLUMN: MAIN CONTENT */}
+        {/* LEFT: MAIN CONTENT */}
         <main className="w-full lg:w-[70%] lg:border-r border-border/40 min-h-screen">
           
-          {/* WIZARD SECTION */}
+          {/* WIZARD */}
           <section className="p-6 md:p-12 border-b border-border/40">
             <div className="flex items-center justify-between mb-12">
               <h2 className="text-4xl font-bold tracking-tighter uppercase">Configurador</h2>
               <div className="flex items-center gap-2 font-mono text-sm">
                 <span className={step === 1 ? 'text-accent font-bold' : 'text-muted-foreground'}>01. BASE</span>
                 <span className="text-muted-foreground">/</span>
-                <span className={step === 2 ? 'text-accent font-bold' : 'text-muted-foreground'}>02. PRINT</span>
+                <span className={step === 2 ? 'text-accent font-bold' : 'text-muted-foreground'}>02. UBICACIÓN</span>
               </div>
             </div>
 
-            {/* STEP 1: BASE SELECTION */}
+            {/* STEP 1: BASE */}
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="mb-6">
@@ -395,7 +318,6 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       <div className="aspect-square bg-white mb-4 overflow-hidden relative">
                         {b.id === 'tee' ? (
                           <>
-                            {/* Crossfade fotorrealista entre colores */}
                             {COLORS.map(c => (
                               <img
                                 key={c.id}
@@ -434,7 +356,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                               <button
                                 onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                                 className="flex flex-col items-center gap-2 bg-white/90 hover:bg-white text-foreground rounded-full w-20 h-20 justify-center shadow-lg transition-transform hover:scale-110"
-                                aria-label="Subir diseño desde galería o computador"
+                                aria-label="Subir diseño"
                               >
                                 <Upload className="w-7 h-7" />
                               </button>
@@ -462,7 +384,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                         {b.id === 'tee' && <p>COLOR: {currentColor.name}</p>}
                       </div>
 
-                      {/* NOTA IMPORTANTE — solo para la tarjeta de subida */}
+                      {/* NOTA IMPORTANTE — solo para subida */}
                       {b.id === 'longsleeve' && (
                         <div className="mt-4">
                           <button
@@ -474,7 +396,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                           >
                             <span className="flex items-center gap-2">
                               <FileImage className="w-3.5 h-3.5 shrink-0" />
-                              ⚠ NOTA IMPORTANTE — REQUISITOS DE TU ARCHIVO
+                              ⚠ REQUISITOS DEL ARCHIVO
                             </span>
                             <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showNotaImportante ? 'rotate-90' : ''}`} />
                           </button>
@@ -482,14 +404,13 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                           {showNotaImportante && (
                             <div className="border border-accent/30 border-t-0 bg-accent/5 p-4 space-y-2.5">
                               <p className="text-xs font-medium leading-relaxed">
-                                Tu diseño debe ser <strong className="text-foreground">PNG a 300 PPP</strong> (píxeles por pulgada) para garantizar un estampado nítido y profesional.
+                                Tu diseño debe ser <strong className="text-foreground">PNG a 300 DPI</strong> para garantizar un estampado nítido.
                               </p>
                               <ul className="text-xs text-muted-foreground space-y-1.5">
-                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Formato: <strong className="text-foreground">PNG</strong> (sin pérdida de calidad)</span></li>
-                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Resolución mínima: <strong className="text-foreground">300 DPI / 300 PPP</strong></span></li>
+                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Formato: <strong className="text-foreground">PNG</strong> (sin pérdida)</span></li>
+                                <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Mínimo: <strong className="text-foreground">300 DPI</strong></span></li>
                                 <li className="flex items-start gap-2"><Check className="w-3 h-3 text-accent shrink-0 mt-0.5" /><span>Fondo transparente recomendado</span></li>
-                                <li className="flex items-start gap-2"><X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" /><span>No JPG, capturas de pantalla ni imágenes pixeladas</span></li>
-                                <li className="flex items-start gap-2"><X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" /><span>Baja resolución = estampado borroso, sin excepciones</span></li>
+                                <li className="flex items-start gap-2"><X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" /><span>No JPG ni capturas de pantalla</span></li>
                               </ul>
                             </div>
                           )}
@@ -510,7 +431,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               </div>
             )}
 
-            {/* STEP 2: SELECCIÓN DE UBICACIÓN */}
+            {/* STEP 2: UBICACIÓN */}
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                 <button onClick={() => setStep(1)} className="flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-foreground mb-8 transition-colors">
@@ -518,12 +439,11 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 </button>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  {/* Placement Selector — panel central rediseñado */}
+                  {/* Placement selector */}
                   <div>
                     <h3 className="font-mono text-sm text-muted-foreground mb-1">SELECCIONA UBICACIÓN</h3>
                     <p className="font-mono text-[10px] text-muted-foreground/70 mb-6">El costo varía según la zona de impresión.</p>
 
-                    {/* Checkboxes multi-selección */}
                     <div className="space-y-3">
                       {PLACEMENTS.map(p => {
                         const isSelected = selectedPlacements.includes(p.id);
@@ -536,7 +456,6 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                                 : 'border-border hover:border-foreground/40'
                               }`}
                           >
-                            {/* Checkbox cuadrado estilizado */}
                             <div
                               onClick={() => togglePlacement(p.id)}
                               className={`w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer
@@ -544,28 +463,13 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                             >
                               {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                             </div>
-
-                            <input
-                              type="checkbox"
-                              value={p.id}
-                              checked={isSelected}
-                              onChange={() => togglePlacement(p.id)}
-                              className="sr-only"
-                            />
-
-                            {/* Label content */}
+                            <input type="checkbox" value={p.id} checked={isSelected} onChange={() => togglePlacement(p.id)} className="sr-only" />
                             <div className="flex-1 min-w-0" onClick={() => togglePlacement(p.id)}>
-                              <p className={`font-mono text-sm font-bold tracking-wider uppercase ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}>
-                                {p.name}
-                              </p>
+                              <p className={`font-mono text-sm font-bold tracking-wider uppercase ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}>{p.name}</p>
                               <p className="font-mono text-[11px] text-muted-foreground mt-0.5">{p.desc}</p>
                             </div>
-
-                            {/* Price */}
                             <div className="text-right shrink-0" onClick={() => togglePlacement(p.id)}>
-                              <p className={`font-mono text-base font-bold transition-colors ${isSelected ? 'text-accent' : 'text-foreground/70'}`}>
-                                +{formatCLP(p.price)}
-                              </p>
+                              <p className={`font-mono text-base font-bold transition-colors ${isSelected ? 'text-accent' : 'text-foreground/70'}`}>+{formatCLP(p.price)}</p>
                               <p className="font-mono text-[10px] text-muted-foreground">CLP</p>
                             </div>
                           </label>
@@ -573,19 +477,17 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       })}
                     </div>
 
-                    {/* Acumulador de precio en tiempo real */}
+                    {/* Acumulador */}
                     <div className="mt-4 p-4 border border-border bg-muted/60">
                       <div className="space-y-1.5 mb-3">
                         <div className="flex justify-between font-mono text-[11px] text-muted-foreground">
-                          <span>PRENDA BASE</span>
-                          <span>{formatCLP(base.price)}</span>
+                          <span>PRENDA BASE</span><span>{formatCLP(base.price)}</span>
                         </div>
                         {PLACEMENTS.map(p => {
                           const sel = selectedPlacements.includes(p.id);
                           return (
                             <div key={p.id} className={`flex justify-between font-mono text-[11px] transition-all duration-200 ${sel ? 'text-accent font-bold' : 'text-muted-foreground/40 line-through'}`}>
-                              <span>ESTAMPADO {p.name}</span>
-                              <span>+{formatCLP(p.price)}</span>
+                              <span>ESTAMPADO {p.name}</span><span>+{formatCLP(p.price)}</span>
                             </div>
                           );
                         })}
@@ -599,16 +501,15 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       </div>
                     </div>
 
-                    {/* Botón CONFIRMAR ELECCIÓN */}
                     <button
                       onClick={() => {
                         if (selectedPlacements.length > 0) {
                           setPlacementsConfirmed(true);
-                          setStep(1); // volver al configurador principal con selección guardada
+                          setStep(1);
                         }
                       }}
                       disabled={selectedPlacements.length === 0}
-                      className={`mt-4 w-full py-4 px-6 font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-200 group
+                      className={`mt-4 w-full py-4 px-6 font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-200
                         ${selectedPlacements.length > 0
                           ? placementsConfirmed
                             ? 'bg-accent text-white cursor-default'
@@ -618,7 +519,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     >
                       {placementsConfirmed
                         ? <><CheckCircle2 className="w-4 h-4" /> ELECCIÓN CONFIRMADA</>
-                        : <><Check className="w-4 h-4" /> CONFIRMAR ELECCIÓN · {formatCLP(subtotal)} CLP</>
+                        : <><Check className="w-4 h-4" /> CONFIRMAR · {formatCLP(subtotal)} CLP</>
                       }
                     </button>
                     {selectedPlacements.length === 0 && (
@@ -626,14 +527,12 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     )}
                   </div>
 
-                  {/* Panel derecho: resumen técnico de la ubicación */}
+                  {/* Panel técnico */}
                   <div>
                     <h3 className="font-mono text-sm text-muted-foreground mb-6">UBICACIÓN TÉCNICA</h3>
-
-                    {/* Cards de zonas seleccionadas */}
                     {selectedPlacements.length === 0 ? (
                       <div className="border border-dashed border-border p-6 text-center">
-                        <p className="font-mono text-xs text-muted-foreground">Ninguna zona seleccionada.<br />Marca una o más opciones a la izquierda.</p>
+                        <p className="font-mono text-xs text-muted-foreground">Ninguna zona seleccionada.</p>
                       </div>
                     ) : (
                       <div className="space-y-3 mb-6">
@@ -652,29 +551,19 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                       </div>
                     )}
 
-                    {/* Tabla con estado visual de todas las opciones */}
                     <div className="space-y-0 border border-border/40">
                       {PLACEMENTS.map((p, i) => {
                         const sel = selectedPlacements.includes(p.id);
                         return (
-                          <div
-                            key={p.id}
-                            className={`flex items-center justify-between px-4 py-3 font-mono text-xs transition-all duration-200
-                              ${sel ? 'bg-accent/10 text-foreground' : 'text-muted-foreground'}
-                              ${i < PLACEMENTS.length - 1 ? 'border-b border-border/40' : ''}`}
-                          >
+                          <div key={p.id} className={`flex items-center justify-between px-4 py-3 font-mono text-xs transition-all duration-200 ${sel ? 'bg-accent/10 text-foreground' : 'text-muted-foreground'} ${i < PLACEMENTS.length - 1 ? 'border-b border-border/40' : ''}`}>
                             <div className="flex items-center gap-3">
-                              {sel
-                                ? <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
-                                : <div className="w-3.5 h-3.5 border border-border/60 shrink-0" />
-                              }
+                              {sel ? <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" /> : <div className="w-3.5 h-3.5 border border-border/60 shrink-0" />}
                               <span className={`font-bold uppercase tracking-wider ${sel ? '' : 'line-through opacity-50'}`}>{p.name}</span>
                             </div>
                             <span className={sel ? 'text-accent font-bold' : 'opacity-40'}>{formatCLP(p.price)}</span>
                           </div>
                         );
                       })}
-                      {/* Fila de total */}
                       <div className="flex items-center justify-between px-4 py-3 font-mono text-xs bg-foreground text-background">
                         <span className="font-bold uppercase tracking-wider">TOTAL UBICACIONES</span>
                         <span className="font-bold">{formatCLP(placementsTotal)}</span>
@@ -686,7 +575,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                         <Info className="w-5 h-5 text-accent shrink-0 mt-0.5" />
                         <div>
                           <h4 className="font-bold text-sm mb-1 uppercase tracking-tight">Inspección Manual</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">Cada impresión es curada a 160°C y revisada bajo luz industrial. Adherencia y fidelidad de color garantizadas.</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">Cada impresión es curada a 160°C y revisada bajo luz industrial.</p>
                         </div>
                       </div>
                     </div>
@@ -696,15 +585,15 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
             )}
           </section>
 
+          {/* COLOR + SPECS */}
           {showColorConfig && (
           <section className="p-6 md:p-12 border-b border-border/40 bg-[#FAFAFA]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              {/* High Fidelity Viewer — crossfade fotorrealista entre colores + overlay de diseño */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+              {/* High Fidelity Viewer */}
               <div className="relative group overflow-hidden border border-border aspect-[4/5] bg-white cursor-crosshair">
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-none">
                   <div className="bg-background/80 backdrop-blur font-mono text-[10px] px-3 py-1 border border-border">INSPECCIÓN X-RAY</div>
                 </div>
-                {/* Todas las imágenes apiladas — crossfade suave al cambiar color */}
                 {COLORS.map(c => (
                   <img
                     key={c.id}
@@ -715,94 +604,46 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     }`}
                   />
                 ))}
-
-                {/* ── OVERLAY DE DISEÑO ESTAMPADO ──────────────────────────────────
-                    Solo aparece tras subir un archivo. Se posiciona sobre el pecho
-                    del maniquí, centrado, escalado a las medidas físicas de la talla.
-                    Los cambios de color de la prenda no afectan este layer. */}
                 {uploadedDesign ? (
                   <div
                     className="absolute z-20 transition-all duration-300 pointer-events-none"
-                    style={{
-                      width: `${printWidthPercent}%`,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      top: '30%',   // posición del pecho en el encuadre del maniquí
-                    }}
+                    style={{ width: `${printWidthPercent}%`, left: '50%', transform: 'translateX(-50%)', top: '30%' }}
                   >
-                    {/* El padding-bottom define la altura proporcional a las medidas físicas */}
-                    <div
-                      style={{
-                        width: '100%',
-                        paddingBottom: `${(PRINT_DIMENSIONS_BY_TALLA[size].h / PRINT_DIMENSIONS_BY_TALLA[size].w) * 100}%`,
-                        position: 'relative',
-                      }}
-                    >
-                      <img
-                        src={uploadedDesign}
-                        alt="Tu diseño estampado"
-                        className="absolute inset-0 w-full h-full object-contain drop-shadow-sm"
-                        draggable={false}
-                      />
+                    <div style={{ width: '100%', paddingBottom: `${(PRINT_DIMENSIONS_BY_TALLA[size].h / PRINT_DIMENSIONS_BY_TALLA[size].w) * 100}%`, position: 'relative' }}>
+                      <img src={uploadedDesign} alt="Tu diseño estampado" className="absolute inset-0 w-full h-full object-contain drop-shadow-sm" draggable={false} />
                     </div>
                   </div>
                 ) : selectedBase === 'longsleeve' ? (
-                  /* Placeholder visible cuando se eligió "SUBE TU DISEÑO" pero aún no se subió */
                   <div className="absolute z-20 inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <div className="bg-black/60 text-white font-mono text-[11px] px-4 py-2 rounded text-center leading-relaxed">
                       <Upload className="w-5 h-5 mx-auto mb-1 opacity-80" />
-                      SUBE TU DISEÑO<br />para previsualizar el estampado
+                      SUBE TU DISEÑO<br />para previsualizar
                     </div>
                   </div>
                 ) : null}
-                {/* ────────────────────────────────────────────────────────────── */}
               </div>
 
-              {/* Technical Specs & Sizing */}
+              {/* Specs panel */}
               <div>
-                {/* === BOTÓN GMAIL — solo para Camiseta Manga Corta === */}
-                {/* ── CTA DISEÑO ASISTIDO ─────────────────────────────── */}
+                {/* WhatsApp CTA — diseño asistido */}
                 <div className="mb-8">
-                  {!colorActivelyChosen ? (
-                    /* Estado bloqueado: el usuario aún no eligió color */
-                    <div className="border-2 border-dashed border-border p-5 text-center space-y-3">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mx-auto">
-                        <Mail className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                      <p className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        Enviar especificaciones por Gmail
-                      </p>
-                      <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
-                        Elige tu color en la sección de abajo<br />para habilitar este botón.
-                      </p>
-                      <div className="flex items-center justify-center gap-2 font-mono text-[10px] text-muted-foreground/60">
-                        <span className="w-6 h-px bg-border" />
-                        Paso 1: Color → Paso 2: Enviar
-                        <span className="w-6 h-px bg-border" />
-                      </div>
-                    </div>
-                  ) : (
-                    /* Estado activo: color elegido */
-                    <>
-                      <button
-                        onClick={() => setGmailModalOpen(true)}
-                        className="w-full flex items-center justify-between gap-4 px-6 py-5 font-mono text-sm uppercase tracking-widest bg-accent text-white hover:bg-accent/90 shadow-lg shadow-accent/20 transition-all duration-200 group"
-                        aria-label="Enviar especificaciones por Gmail"
-                      >
-                        <span className="flex items-center gap-3">
-                          <Mail className="w-5 h-5 shrink-0" />
-                          Enviar especificaciones por Gmail
-                        </span>
-                        <Send className="w-4 h-4 shrink-0 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                      </button>
-                      <p className="font-mono text-[10px] text-accent mt-2 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Color confirmado: <strong>{currentColor.name}</strong> · Pulsa para describir tu diseño
-                      </p>
-                    </>
-                  )}
+                  <button
+                    onClick={handleWhatsAppContact}
+                    className="w-full flex items-center justify-between gap-4 px-6 py-5 font-mono text-sm uppercase tracking-widest text-white shadow-lg transition-all duration-200 group hover:brightness-110"
+                    style={{ backgroundColor: '#25D366' }}
+                  >
+                    <span className="flex items-center gap-3">
+                      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-white shrink-0">
+                        <path d="M16.003 3C9.376 3 4 8.376 4 15.003c0 2.18.587 4.218 1.607 5.97L4 29l8.267-1.585A12.003 12.003 0 0 0 16.003 28c6.624 0 12-5.376 12-12.003C28.003 9.376 22.627 4 16.003 4zm.001 21.84c-1.863 0-3.594-.503-5.083-1.376l-.363-.216-4.908.94.957-4.802-.236-.374A9.845 9.845 0 0 1 5.17 15c0-5.426 4.411-9.838 9.835-9.838 5.424 0 9.835 4.412 9.835 9.838 0 5.426-4.41 9.84-9.836 9.84zm5.39-7.372c-.296-.148-1.748-.86-2.02-.958-.27-.098-.466-.148-.66.148-.195.297-.757.958-.928 1.154-.17.197-.34.222-.636.074-.296-.148-1.25-.46-2.38-1.47-.88-.784-1.473-1.752-1.645-2.048-.17-.295-.018-.455.13-.602.132-.133.296-.347.444-.52.148-.173.198-.297.297-.494.099-.197.05-.37-.025-.52-.074-.147-.66-1.59-.904-2.177-.238-.572-.48-.494-.66-.503l-.562-.01c-.197 0-.518.074-.79.37-.27.296-1.03 1.005-1.03 2.45 0 1.443 1.055 2.84 1.203 3.037.148.197 2.075 3.167 5.03 4.44.702.302 1.25.483 1.677.618.705.224 1.347.192 1.855.116.565-.085 1.748-.715 1.995-1.405.247-.69.247-1.28.173-1.403-.074-.124-.27-.197-.566-.345z"/>
+                      </svg>
+                      Coordinar por WhatsApp
+                    </span>
+                    <ArrowRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <p className="font-mono text-[10px] text-muted-foreground mt-2">
+                    Envía tu configuración actual y coordinamos el diseño directo.
+                  </p>
                 </div>
-                {/* ─────────────────────────────────────────────────────── */}
 
                 <h2 className="text-3xl font-bold tracking-tighter uppercase mb-8">Especificaciones</h2>
                 
@@ -811,18 +652,19 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                     <Droplets className="w-5 h-5 text-muted-foreground shrink-0" />
                     <div>
                       <h4 className="font-mono text-xs font-bold mb-1">ESTAMPADO PERSONALIZADO</h4>
-                      <p className="text-sm">Serigrafía Alta Densidad / DTF Industrial. Estabilidad dimensional garantizada &lt;3% de encogimiento tras 50 lavados.</p>
+                      <p className="text-sm">Serigrafía Alta Densidad / DTF Industrial. Garantía de &lt;3% encogimiento tras 50 lavados.</p>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start border-b border-border/50 pb-4">
                     <ShieldCheck className="w-5 h-5 text-muted-foreground shrink-0" />
                     <div>
                       <h4 className="font-mono text-xs font-bold mb-1">RESISTENCIA</h4>
-                      <p className="text-sm">Curado a 160°C. Resiste fricción mecánica y lavados abrasivos sin craquelado prematuro.</p>
+                      <p className="text-sm">Curado a 160°C. Resiste lavados abrasivos sin craquelado prematuro.</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Color selector */}
                 {selectedBase === 'tee' && (
                   <div className="mb-10">
                     <h4 className="font-mono text-xs font-bold mb-4">ELIGE TU COLOR:</h4>
@@ -831,7 +673,7 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                         {COLORS.map(c => (
                           <button
                             key={c.id}
-                            onClick={() => { setSelectedColor(c.id); setColorActivelyChosen(true); }}
+                            onClick={() => setSelectedColor(c.id)}
                             onMouseEnter={() => setHoveredColor(c.id)}
                             onMouseLeave={() => setHoveredColor(null)}
                             className={`w-12 h-12 rounded-full border-2 transition-all shadow-sm ${selectedColor === c.id ? 'border-accent ring-2 ring-accent/30 scale-110' : 'border-border hover:border-foreground/60 hover:scale-105'}`}
@@ -842,30 +684,22 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                         ))}
                       </div>
                       <div className="flex items-center gap-3 border-l border-border/60 pl-4">
-                        <span
-                          className="w-12 h-12 rounded-full border border-border/60 shadow-sm"
-                          style={{ backgroundColor: currentColor.hex }}
-                        />
+                        <span className="w-10 h-10 rounded-full border border-border/60 shadow-sm" style={{ backgroundColor: currentColor.hex }} />
                         <p className="font-mono text-sm font-bold">COLOR: {currentColor.name}</p>
                       </div>
                     </div>
-                    {colorActivelyChosen && (
-                      <p className="mt-3 font-mono text-[10px] text-muted-foreground flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-accent" />
-                        Color seleccionado. Ahora pulsa <span className="font-bold text-foreground">"Enviar especificaciones por Gmail"</span> arriba.
-                      </p>
-                    )}
                   </div>
                 )}
 
+                {/* Talla + escala inline */}
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-4">
                     <h4 className="font-mono text-xs font-bold">SELECCIÓN DE TALLA (EU)</h4>
                     <button
-                      onClick={() => setShowScaleModal(true)}
+                      onClick={() => setShowScaleInline(p => !p)}
                       className="flex items-center gap-1 font-mono text-[10px] text-accent hover:underline"
                     >
-                      <Ruler className="w-3 h-3" /> VER DETALLE DE ESCALA
+                      <Ruler className="w-3 h-3" /> {showScaleInline ? 'OCULTAR ESCALA' : 'VER ESCALA'}
                     </button>
                   </div>
                   <div className="flex gap-2">
@@ -881,125 +715,75 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-xs font-mono text-muted-foreground">
                     <Ruler className="w-3.5 h-3.5 shrink-0" />
-                    <span>
-                      TALLA {size} — MEDIDA DEL ESTAMPADO{isPechoLogoFijo ? ' (pecho)' : ''}: <span className="font-bold text-foreground">{printMeasure}</span>
-                    </span>
+                    <span>TALLA {size} — ESTAMPADO: <span className="font-bold text-foreground">{printMeasure}</span></span>
                   </div>
-                  {/* Nota A3 para tallas XL y 2XL */}
                   {PRINT_DIMENSIONS_BY_TALLA[size]?.requiresA3 && (
                     <div className="mt-2 flex items-start gap-2 p-2 border border-accent/30 bg-accent/5 font-mono text-[10px] text-accent">
                       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span>Talla {size}: requiere plancha A3 o superior para producción. Consulta disponibilidad con el taller.</span>
+                      <span>Talla {size}: requiere plancha A3. Consulta disponibilidad.</span>
                     </div>
                   )}
-                  <div className="mt-2 font-mono text-[10px] text-muted-foreground/80 leading-relaxed">
-                    S: 25×35 cm · M: 28×38 cm · L: 30×40 cm · XL: 32×42 cm · 2XL: 35×45 cm · Logo pecho: 10×10 cm
-                  </div>
-                  <div className="mt-1 font-mono text-[10px] text-muted-foreground/60 leading-relaxed">
-                    El estampado ocupa ~{printWidthRatioPct.toFixed(0)}% del ancho de la prenda en talla {size} — proporción constante en todas las tallas, con margen libre a cada costura.
-                  </div>
+
+                  {/* Escala inline expandible */}
+                  {showScaleInline && (
+                    <div className="mt-4 border border-border p-4 bg-muted/40 animate-in slide-in-from-top-2 duration-200">
+                      <h5 className="font-mono text-xs font-bold mb-3 flex items-center gap-2">
+                        <Ruler className="w-3.5 h-3.5 text-accent" /> DETALLE DE ESCALA DE ESTAMPADO
+                      </h5>
+                      <div className="space-y-2">
+                        {SIZES.map(s => {
+                          const dims = PRINT_DIMENSIONS_BY_TALLA[s];
+                          const isActive = s === size;
+                          const maxW = PRINT_DIMENSIONS_BY_TALLA['2XL'].w;
+                          const barW = (dims.w / maxW) * 100;
+                          return (
+                            <div key={s} className="flex items-center gap-3">
+                              <span className={`font-mono text-xs w-8 shrink-0 font-bold ${isActive ? 'text-accent' : 'text-muted-foreground'}`}>{s}</span>
+                              <div className="flex-1 bg-background h-7 relative overflow-hidden border border-border/40">
+                                <div
+                                  className={`h-full flex items-center justify-end pr-2 transition-all duration-300 ${isActive ? 'bg-accent text-white' : 'bg-foreground/15 text-foreground'}`}
+                                  style={{ width: `${barW}%` }}
+                                >
+                                  <span className="font-mono text-[10px] font-bold whitespace-nowrap">{dims.w}×{dims.h} cm</span>
+                                </div>
+                              </div>
+                              {dims.requiresA3 && (
+                                <span className="font-mono text-[9px] text-accent border border-accent/40 px-1 py-0.5 shrink-0">A3</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="font-mono text-[10px] text-muted-foreground mt-3">
+                        El estampado crece en cm con cada talla, manteniendo ~50–55% del ancho de la prenda.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* NAVEGACIÓN DE RETORNO */}
+                {/* Botones de retorno */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/40">
-                  <button
-                    onClick={() => navTo('categorias')}
-                    className="flex-1 flex items-center justify-center gap-2 border border-border py-3 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors"
-                  >
+                  <button onClick={() => navTo('categorias')} className="flex-1 flex items-center justify-center gap-2 border border-border py-3 font-mono text-xs font-bold tracking-wider hover:bg-muted transition-colors">
                     ← VOLVER A CATEGORÍAS
                   </button>
-                  <button
-                    onClick={() => navTo('')}
-                    className="flex-1 flex items-center justify-center gap-2 bg-foreground text-background py-3 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors"
-                  >
+                  <button onClick={() => navTo('')} className="flex-1 flex items-center justify-center gap-2 bg-foreground text-background py-3 font-mono text-xs font-bold tracking-wider hover:bg-accent transition-colors">
                     ⌂ IR AL INICIO
                   </button>
                 </div>
-
               </div>
             </div>
           </section>
           )}
 
-          {/* ESTADO DE MI COLABORACIÓN (CUSTOMER DASHBOARD) */}
-          <section className="p-6 md:p-12 border-b border-border/40">
-            <h2 className="text-3xl font-bold tracking-tighter uppercase mb-2">Flujo de Producción</h2>
-            <p className="text-muted-foreground mb-12">Monitoreo transparente de tu encargo en nuestro taller.</p>
-            
-            <div className="relative">
-              {/* Line connector */}
-              <div className="absolute left-[15px] md:left-[50%] top-0 bottom-0 w-px bg-border/50 md:-translate-x-1/2"></div>
-              
-              <div className="space-y-8 relative">
-                {[
-                  { state: 'Solicitud Recibida', desc: 'Confirmación de especificaciones y pago.', date: 'HOY', active: true, done: true },
-                  { state: 'Impresión & Curado', desc: 'Ejecución en taller. Espera en fila de producción.', date: 'ESTIMADO: +2 DÍAS', active: true, done: false },
-                  { state: 'Control de Calidad', desc: 'Inspección lumínica y estrés térmico.', date: 'PENDIENTE', active: false, done: false },
-                  { state: 'Despacho CERRADO', desc: 'Generación de tracking y empaque sellado.', date: 'PENDIENTE', active: false, done: false },
-                ].map((s, i) => (
-                  <div key={i} className={`relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-12 w-full ${!s.active && 'opacity-50 grayscale'}`}>
-                    <div className="md:w-1/2 flex justify-end text-left md:text-right pl-12 md:pl-0">
-                      <div>
-                        <h4 className="font-bold uppercase tracking-tight">{s.state}</h4>
-                        <p className="text-sm text-muted-foreground hidden md:block">{s.desc}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Node */}
-                    <div className="absolute left-0 md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-background border-2 flex items-center justify-center shrink-0 z-10 shadow-[0_0_0_4px_hsl(var(--background))]">
-                      {s.done ? (
-                        <CheckCircle2 className="w-5 h-5 text-accent" />
-                      ) : s.active ? (
-                        <div className="w-2.5 h-2.5 bg-accent rounded-full animate-pulse"></div>
-                      ) : (
-                        <div className="w-2 h-2 bg-border rounded-full"></div>
-                      )}
-                    </div>
-                    
-                    <div className="md:w-1/2 text-left pl-12 md:pl-0">
-                      <span className="font-mono text-xs bg-muted px-2 py-1 border border-border/50">{s.date}</span>
-                      <p className="text-sm text-muted-foreground block md:hidden mt-1">{s.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* RESEÑAS CURADAS */}
-          <section className="p-6 md:p-12">
-            <h2 className="text-3xl font-bold tracking-tighter uppercase mb-2">Desgaste Real</h2>
-            <p className="text-muted-foreground mb-12 max-w-xl">No escondemos el paso del tiempo. Así se ven nuestras impresiones industriales tras meses de uso continuo y lavados abrasivos.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="group relative overflow-hidden border border-border">
-                <div className="absolute top-4 left-4 bg-background/90 px-3 py-1 font-mono text-[10px] z-10 border border-border">50+ LAVADOS</div>
-                <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-review-wear.jpg`} alt="Wear Detail" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="p-4 bg-muted border-t border-border">
-                  <p className="text-sm italic">"El degradado natural que toma el estampado le da más carácter. Ningún craquelado estructural."</p>
-                  <p className="font-mono text-xs mt-2 font-bold">— TEST 01 / CLIENTE A.</p>
-                </div>
-              </div>
-              <div className="group relative overflow-hidden border border-border md:translate-y-12">
-                <div className="absolute top-4 left-4 bg-background/90 px-3 py-1 font-mono text-[10px] z-10 border border-border">USO DIARIO (6 MESES)</div>
-                <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-review-editorial.jpg`} alt="Editorial Wear" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="p-4 bg-muted border-t border-border">
-                  <p className="text-sm italic">"La tela se suaviza pero el fit cuadrado se mantiene intacto. El cuello no ha cedido ni un milímetro."</p>
-                  <p className="font-mono text-xs mt-2 font-bold">— TEST 02 / ESTUDIO M.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
         </main>
 
-        {/* RIGHT COLUMN: STICKY PRICE TRACKER (Sidebar on Desktop, Footer on Mobile) */}
-        <aside className="w-full lg:w-[30%] lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] border-t lg:border-t-0 border-border/40 bg-background lg:bg-transparent fixed bottom-0 left-0 z-40 p-6 flex flex-col justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.05)] lg:shadow-none">
+        {/* RIGHT SIDEBAR: PRICE TRACKER */}
+        <aside className="w-full lg:w-[30%] lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] border-t lg:border-t-0 border-border/40 bg-background fixed bottom-0 left-0 z-40 p-6 flex flex-col justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.05)] lg:shadow-none lg:relative lg:bottom-auto lg:left-auto">
           
           <div className="hidden lg:block space-y-6 flex-1 overflow-y-auto pr-2 pb-6">
             <h3 className="font-mono text-sm text-muted-foreground border-b border-border pb-4">RESUMEN TÉCNICO</h3>
 
-            {/* ── CARRITO DE CATÁLOGO ───────────────────────── */}
+            {/* Carrito de catálogo */}
             {cartItems.length > 0 && (
               <div className="border border-accent/30 bg-accent/5 p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -1010,68 +794,42 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                   <button
                     onClick={() => { cartStore.clear(); setCartItems([]); }}
                     className="font-mono text-[9px] text-muted-foreground hover:text-red-400 transition-colors flex items-center gap-1"
-                    title="Vaciar carrito"
                   >
                     <Trash2 className="w-3 h-3" /> VACIAR
                   </button>
                 </div>
-
                 <div className="space-y-0 border border-border/40">
                   {cartItems.map((item, idx) => (
-                    <div
-                      key={`${item.id}-${item.talla}`}
-                      className={`flex items-start gap-3 px-3 py-2.5 ${idx < cartItems.length - 1 ? 'border-b border-border/40' : ''}`}
-                    >
-                      {/* Swatch de color de la categoría */}
+                    <div key={`${item.id}-${item.talla}`} className={`flex items-start gap-3 px-3 py-2.5 ${idx < cartItems.length - 1 ? 'border-b border-border/40' : ''}`}>
                       <div className="w-2 self-stretch rounded-full shrink-0 mt-0.5" style={{ background: item.accentHex }} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-mono text-[11px] font-bold leading-snug truncate text-foreground">{item.titulo}</p>
-                        <p className="font-mono text-[10px] text-muted-foreground">
-                          Talla <span className="font-bold">{item.talla}</span> · ×{item.cantidad}
-                          {item.emoji ? ` ${item.emoji}` : ''}
-                        </p>
+                        <p className="font-mono text-[11px] font-bold leading-snug truncate">{item.titulo}</p>
+                        <p className="font-mono text-[10px] text-muted-foreground">Talla <span className="font-bold">{item.talla}</span> · ×{item.cantidad}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <p className="font-mono text-[11px] font-bold" style={{ color: item.accentHex }}>
-                          {formatCLP(item.precio * item.cantidad)}
-                        </p>
-                        <button
-                          onClick={() => { cartStore.remove(item.id, item.talla); setCartItems(cartStore.get()); }}
-                          className="text-muted-foreground hover:text-red-400 transition-colors"
-                          title="Quitar"
-                        >
+                        <p className="font-mono text-[11px] font-bold" style={{ color: item.accentHex }}>{formatCLP(item.precio * item.cantidad)}</p>
+                        <button onClick={() => { cartStore.remove(item.id, item.talla); setCartItems(cartStore.get()); }} className="text-muted-foreground hover:text-red-400 transition-colors">
                           <X className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
                   ))}
-
-                  {/* Fila total */}
                   <div className="flex items-center justify-between px-3 py-2.5 bg-accent/10">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">SUBTOTAL CATÁLOGO</span>
-                    <span className="font-mono text-sm font-bold text-accent">
-                      {formatCLP(cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0))}
-                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider">SUBTOTAL CATÁLOGO</span>
+                    <span className="font-mono text-sm font-bold text-accent">{formatCLP(cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0))}</span>
                   </div>
                 </div>
-
-                <p className="font-mono text-[10px] text-muted-foreground mt-2.5 leading-relaxed">
-                  Estos productos se suman a tu configuración actual para el pedido final.
-                </p>
               </div>
             )}
 
             {cartItems.length === 0 && (
               <div className="border border-dashed border-border/40 p-4 text-center">
                 <ShoppingCart className="w-5 h-5 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="font-mono text-[10px] text-muted-foreground/50 leading-relaxed">
-                  Agrega productos desde las<br />categorías para verlos aquí.
-                </p>
+                <p className="font-mono text-[10px] text-muted-foreground/50 leading-relaxed">Agrega productos desde las categorías.</p>
               </div>
             )}
-            {/* ─────────────────────────────────────────────── */}
 
-            {/* Summary Items */}
+            {/* Resumen */}
             <div className="space-y-4">
               <div>
                 <p className="font-mono text-[10px] text-muted-foreground mb-1">PRENDA BASE</p>
@@ -1092,12 +850,6 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                         <p className="font-mono text-sm">+{formatCLP(p.price)}</p>
                       </div>
                     ))}
-                    {placements.length > 1 && (
-                      <div className="flex justify-between items-center border-t border-border/40 pt-1 mt-1">
-                        <p className="font-mono text-[10px] text-muted-foreground">SUBTOTAL UBICACIONES</p>
-                        <p className="font-mono text-xs font-bold text-accent">+{formatCLP(placementsTotal)}</p>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -1112,101 +864,54 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
               </div>
             </div>
 
-            {/* Método de Envío */}
-            <div className="pt-4 border-t border-border space-y-3 mt-6">
+            {/* Método de envío */}
+            <div className="pt-4 border-t border-border space-y-3">
               <p className="font-mono text-[10px] text-muted-foreground mb-2 flex items-center gap-2">
                 <MapPin className="w-3 h-3" /> MÉTODO DE ENVÍO
               </p>
 
-              {/* Opción A — Punto de encuentro (gratis) */}
-              <label
-                className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-200 ${
-                  deliveryMethod === 'pickup'
-                    ? 'border-accent bg-accent/5 ring-1 ring-accent/40'
-                    : 'border-border hover:border-foreground/40'
-                }`}
-              >
+              <label className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-200 ${deliveryMethod === 'pickup' ? 'border-accent bg-accent/5 ring-1 ring-accent/40' : 'border-border hover:border-foreground/40'}`}>
                 <div className="mt-0.5 shrink-0">
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      deliveryMethod === 'pickup' ? 'border-accent' : 'border-border'
-                    }`}
-                    onClick={() => setDeliveryMethod('pickup')}
-                  >
-                    {deliveryMethod === 'pickup' && (
-                      <div className="w-2 h-2 rounded-full bg-accent" />
-                    )}
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${deliveryMethod === 'pickup' ? 'border-accent' : 'border-border'}`} onClick={() => setDeliveryMethod('pickup')}>
+                    {deliveryMethod === 'pickup' && <div className="w-2 h-2 rounded-full bg-accent" />}
                   </div>
                 </div>
-                <input
-                  type="radio"
-                  name="deliveryMethod"
-                  value="pickup"
-                  checked={deliveryMethod === 'pickup'}
-                  onChange={() => setDeliveryMethod('pickup')}
-                  className="sr-only"
-                />
+                <input type="radio" name="deliveryMethod" value="pickup" checked={deliveryMethod === 'pickup'} onChange={() => setDeliveryMethod('pickup')} className="sr-only" />
                 <div className="flex-1 min-w-0" onClick={() => setDeliveryMethod('pickup')}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-mono text-xs font-bold uppercase tracking-wider">Entrega en Centro (Gratis)</p>
+                    <p className="font-mono text-xs font-bold uppercase tracking-wider">Punto de Encuentro (Gratis)</p>
                     <span className="font-mono text-sm font-bold text-accent shrink-0">$0</span>
                   </div>
-                  <p className="font-mono text-[10px] text-muted-foreground mt-1 leading-relaxed">
-                    Punto de encuentro seguro en Temuco Centro (ej: Plaza de Armas). Coordinaremos fecha y hora por WhatsApp tras confirmar tu pedido.
-                  </p>
+                  <p className="font-mono text-[10px] text-muted-foreground mt-1">Temuco Centro. Coordinamos por WhatsApp.</p>
                 </div>
               </label>
 
-              {/* Opción B — Delivery a domicilio ($2.000) */}
-              <label
-                className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-200 ${
-                  deliveryMethod === 'delivery'
-                    ? 'border-accent bg-accent/5 ring-1 ring-accent/40'
-                    : 'border-border hover:border-foreground/40'
-                }`}
-              >
+              <label className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-200 ${deliveryMethod === 'delivery' ? 'border-accent bg-accent/5 ring-1 ring-accent/40' : 'border-border hover:border-foreground/40'}`}>
                 <div className="mt-0.5 shrink-0">
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      deliveryMethod === 'delivery' ? 'border-accent' : 'border-border'
-                    }`}
-                    onClick={() => setDeliveryMethod('delivery')}
-                  >
-                    {deliveryMethod === 'delivery' && (
-                      <div className="w-2 h-2 rounded-full bg-accent" />
-                    )}
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${deliveryMethod === 'delivery' ? 'border-accent' : 'border-border'}`} onClick={() => setDeliveryMethod('delivery')}>
+                    {deliveryMethod === 'delivery' && <div className="w-2 h-2 rounded-full bg-accent" />}
                   </div>
                 </div>
-                <input
-                  type="radio"
-                  name="deliveryMethod"
-                  value="delivery"
-                  checked={deliveryMethod === 'delivery'}
-                  onChange={() => setDeliveryMethod('delivery')}
-                  className="sr-only"
-                />
+                <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === 'delivery'} onChange={() => setDeliveryMethod('delivery')} className="sr-only" />
                 <div className="flex-1 min-w-0" onClick={() => setDeliveryMethod('delivery')}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-mono text-xs font-bold uppercase tracking-wider">Delivery a Domicilio (Temuco)</p>
+                    <p className="font-mono text-xs font-bold uppercase tracking-wider">Delivery a Domicilio</p>
                     <span className="font-mono text-sm font-bold shrink-0">+{formatCLP(DELIVERY_COST)}</span>
                   </div>
-                  <p className="font-mono text-[10px] text-muted-foreground mt-1 leading-relaxed">
-                    Delivery disponible para radios urbanos de Temuco. Si tu dirección es fuera del radio, te contactaremos para coordinar envío por pagar.
-                  </p>
+                  <p className="font-mono text-[10px] text-muted-foreground mt-1">Radio urbano de Temuco.</p>
                 </div>
               </label>
 
-              {/* Política de seguridad de pago */}
               <div className="flex items-start gap-2 p-3 border border-border/60 bg-muted/60">
                 <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="font-mono text-[10px] text-muted-foreground leading-relaxed">
-                  <span className="font-bold text-foreground">Nota:</span> Para asegurar la eficiencia de nuestro servicio, los pedidos deben estar pagados vía transferencia antes de coordinar la entrega o despacho.
+                  Pedidos confirmados vía transferencia antes de coordinar entrega.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Mobile minimal view & Desktop total */}
+          {/* Total + CTA */}
           <div className="flex lg:flex-col items-center lg:items-stretch justify-between gap-4 lg:gap-6 lg:border-t lg:border-border lg:pt-6 bg-background">
             <div className="flex-1 lg:flex-none">
               <p className="font-mono text-[10px] text-muted-foreground hidden lg:block mb-1">TOTAL ESTIMADO</p>
@@ -1214,18 +919,26 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
                 <span className="text-3xl font-bold tracking-tighter">{formatCLP(total)}</span>
                 <span className="font-mono text-xs text-muted-foreground">CLP</span>
               </div>
-              <p className="text-[10px] text-muted-foreground lg:hidden">Base + Impresión {deliveryMethod === 'delivery' ? `+ Delivery ${formatCLP(DELIVERY_COST)}` : '+ Punto de encuentro gratis'}</p>
+              <p className="text-[10px] text-muted-foreground lg:hidden">
+                {deliveryMethod === 'delivery' ? `+ Delivery ${formatCLP(DELIVERY_COST)}` : 'Punto de encuentro gratis'}
+              </p>
             </div>
             
             <div className="flex gap-2 flex-col lg:flex-row lg:w-full w-auto">
-              <button 
-                onClick={handleSaveConfig}
-                className="p-4 border border-border hover:border-foreground flex items-center justify-center transition-colors lg:w-16 w-12 h-12 lg:h-auto shrink-0"
-                title="Guardar Configuración"
+              <button
+                onClick={handleWhatsAppContact}
+                className="lg:hidden p-4 flex items-center justify-center transition-colors w-12 h-12 shrink-0 rounded-full"
+                style={{ backgroundColor: '#25D366' }}
+                title="Contactar por WhatsApp"
               >
-                <Save className="w-5 h-5" />
+                <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-white">
+                  <path d="M16.003 3C9.376 3 4 8.376 4 15.003c0 2.18.587 4.218 1.607 5.97L4 29l8.267-1.585A12.003 12.003 0 0 0 16.003 28c6.624 0 12-5.376 12-12.003C28.003 9.376 22.627 4 16.003 4zm.001 21.84c-1.863 0-3.594-.503-5.083-1.376l-.363-.216-4.908.94.957-4.802-.236-.374A9.845 9.845 0 0 1 5.17 15c0-5.426 4.411-9.838 9.835-9.838 5.424 0 9.835 4.412 9.835 9.838 0 5.426-4.41 9.84-9.836 9.84zm5.39-7.372c-.296-.148-1.748-.86-2.02-.958-.27-.098-.466-.148-.66.148-.195.297-.757.958-.928 1.154-.17.197-.34.222-.636.074-.296-.148-1.25-.46-2.38-1.47-.88-.784-1.473-1.752-1.645-2.048-.17-.295-.018-.455.13-.602.132-.133.296-.347.444-.52.148-.173.198-.297.297-.494.099-.197.05-.37-.025-.52-.074-.147-.66-1.59-.904-2.177-.238-.572-.48-.494-.66-.503l-.562-.01c-.197 0-.518.074-.79.37-.27.296-1.03 1.005-1.03 2.45 0 1.443 1.055 2.84 1.203 3.037.148.197 2.075 3.167 5.03 4.44.702.302 1.25.483 1.677.618.705.224 1.347.192 1.855.116.565-.085 1.748-.715 1.995-1.405.247-.69.247-1.28.173-1.403-.074-.124-.27-.197-.566-.345z"/>
+                </svg>
               </button>
-              <button onClick={() => navigate('https://www.webpay.transbank.cl', true)} className="bg-foreground text-background font-mono text-sm h-12 lg:h-14 px-6 flex-1 flex items-center justify-center gap-2 hover:bg-accent transition-colors group">
+              <button
+                onClick={() => navigate('https://www.webpay.transbank.cl', true)}
+                className="bg-foreground text-background font-mono text-sm h-12 lg:h-14 px-6 flex-1 flex items-center justify-center gap-2 hover:bg-accent transition-colors group"
+              >
                 <span className="hidden sm:inline">FINALIZAR COMPRA</span>
                 <span className="sm:hidden">PAGAR</span>
                 <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -1234,270 +947,11 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           </div>
 
         </aside>
-
       </div>
 
-      {/* FLOATING WHATSAPP BUTTON */}
-      <button 
-        onClick={() => setWaModalOpen(true)}
-        className="fixed bottom-32 right-6 lg:bottom-8 lg:right-[32%] z-50 bg-foreground text-background p-4 rounded-full shadow-2xl hover:bg-accent transition-transform hover:scale-110 active:scale-95 group"
-      >
-        <MessageCircle className="w-6 h-6" />
-        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-foreground text-background text-xs font-mono px-3 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded">Asesoría Directa</span>
-      </button>
-
-      {/* GMAIL ESPECIFICACIONES MODAL — Camiseta Manga Corta · Diseño asistido por texto */}
-      {gmailModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setGmailModalOpen(false)} />
-
-          <div className="relative bg-background border border-border w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-accent text-white">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 shrink-0" />
-                <div>
-                  <h3 className="font-mono font-bold text-sm uppercase tracking-widest leading-none">Diseño asistido por correo</h3>
-                  <p className="text-[11px] opacity-75 mt-1">Exclusivo para solicitudes de diseño asistido · Sin subir archivos</p>
-                </div>
-              </div>
-              <button onClick={() => setGmailModalOpen(false)} className="opacity-70 hover:opacity-100 transition-opacity ml-4 shrink-0">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Resumen de selección */}
-              <div className="bg-muted border border-border/50 p-4">
-                <p className="font-mono text-[10px] text-muted-foreground mb-3 uppercase tracking-widest">Tu selección</p>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div
-                      className="w-9 h-9 rounded-full mx-auto mb-1.5 border-2 border-accent shadow-sm"
-                      style={{ backgroundColor: currentColor.hex === '#FFFFFF' ? '#f3f4f6' : currentColor.hex }}
-                    />
-                    <p className="font-mono text-[10px] text-muted-foreground">COLOR</p>
-                    <p className="font-mono text-[11px] font-bold">{currentColor.name}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-9 h-9 rounded-full mx-auto mb-1.5 border-2 border-border bg-background flex items-center justify-center">
-                      <span className="font-mono text-sm font-bold">{size}</span>
-                    </div>
-                    <p className="font-mono text-[10px] text-muted-foreground">TALLA</p>
-                    <p className="font-mono text-[11px] font-bold">{size}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-9 h-9 rounded-full mx-auto mb-1.5 border-2 border-border bg-background flex items-center justify-center">
-                      <span className="font-mono text-sm font-bold">{quantity}</span>
-                    </div>
-                    <p className="font-mono text-[10px] text-muted-foreground">CANTIDAD</p>
-                    <p className="font-mono text-[11px] font-bold">{quantity} ud.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pasos */}
-              <div className="space-y-3">
-                {[
-                  { n: '1', text: <>Se abrirá tu correo con el asunto <strong className="text-foreground">"Solicitud de diseño asistido"</strong> y tus datos pre-cargados.</> },
-                  { n: '2', text: 'Describe tu idea en palabras: logo, personaje, frase, estilo, colores, referencias, etc.' },
-                  { n: '3', text: 'Nuestro equipo te responde con un boceto previo. Sin subir archivos, sin formularios.' },
-                ].map(({ n, text }) => (
-                  <div key={n} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="font-mono text-xs font-bold text-accent">{n}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-snug">{text}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA */}
-              <button
-                onClick={handleGmailSend}
-                className="w-full bg-accent text-white font-mono text-sm py-4 px-6 uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-accent/90 transition-colors group"
-              >
-                <Mail className="w-5 h-5" />
-                Abrir Gmail y describir mi idea
-                <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </button>
-              <p className="text-center font-mono text-[10px] text-muted-foreground">
-                alonsoovalentino@gmail.com
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: DETALLE DE ESCALA POR TALLA */}
-      {showScaleModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowScaleModal(false)} />
-          <div className="relative bg-background border border-border w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Ruler className="w-5 h-5 text-accent shrink-0" />
-                <div>
-                  <h3 className="font-mono font-bold text-sm uppercase tracking-widest leading-none">Detalle de Escala de Estampado</h3>
-                  <p className="text-[11px] text-muted-foreground mt-1">Medidas físicas reales sobre la prenda · Estándar americano (cm)</p>
-                </div>
-              </div>
-              <button onClick={() => setShowScaleModal(false)} className="text-muted-foreground hover:text-foreground ml-4 shrink-0">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Diagrama visual de barras proporcionales */}
-              <div className="space-y-3">
-                {SIZES.map(s => {
-                  const dims = PRINT_DIMENSIONS_BY_TALLA[s];
-                  const isActive = s === size;
-                  // Ancho relativo: 2XL = 100%, S proporcional
-                  const maxW = PRINT_DIMENSIONS_BY_TALLA['2XL'].w;
-                  const barW = (dims.w / maxW) * 100;
-                  return (
-                    <div key={s}>
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className={`font-mono text-xs w-8 shrink-0 font-bold ${isActive ? 'text-accent' : 'text-muted-foreground'}`}>{s}</span>
-                        {/* Barra proporcional al ancho físico */}
-                        <div className="flex-1 bg-muted h-8 relative overflow-hidden border border-border/40">
-                          <div
-                            className={`h-full flex items-center justify-end pr-2 transition-all duration-300 ${isActive ? 'bg-accent text-white' : 'bg-foreground/15 text-foreground'}`}
-                            style={{ width: `${barW}%` }}
-                          >
-                            <span className="font-mono text-[10px] font-bold whitespace-nowrap">{dims.w}×{dims.h} cm</span>
-                          </div>
-                        </div>
-                        {dims.requiresA3 && (
-                          <span className="font-mono text-[9px] text-accent border border-accent/40 px-1.5 py-0.5 shrink-0">A3</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Leyenda */}
-              <div className="border-t border-border pt-4 space-y-2">
-                <div className="flex items-start gap-2 font-mono text-[10px] text-muted-foreground">
-                  <Info className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
-                  <span>El estampado crece en medidas absolutas con cada talla, pero mantiene siempre la misma proporción visual relativa a la prenda (~50–55% del ancho del pecho).</span>
-                </div>
-                <div className="flex items-start gap-2 font-mono text-[10px] text-muted-foreground">
-                  <span className="font-bold text-accent shrink-0">A3</span>
-                  <span>Tallas XL y 2XL requieren plancha de transferencia A3 o superior. Consulta disponibilidad con el taller antes de confirmar el pedido.</span>
-                </div>
-                <div className="flex items-start gap-2 font-mono text-[10px] text-muted-foreground">
-                  <span className="font-bold text-foreground shrink-0">Logo</span>
-                  <span>Logotipos o gráficos pequeños en zona pecho (sin diseño subido): medida fija 10×10 cm en todas las tallas.</span>
-                </div>
-              </div>
-
-              {/* Talla actualmente seleccionada */}
-              <div className={`p-4 border-2 border-accent bg-accent/5`}>
-                <p className="font-mono text-[10px] text-muted-foreground mb-1 uppercase tracking-widest">Tu talla seleccionada</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-2xl font-bold text-accent">{size}</span>
-                  <div className="text-right">
-                    <p className="font-mono text-lg font-bold text-foreground">{PRINT_DIMENSIONS_BY_TALLA[size].w} × {PRINT_DIMENSIONS_BY_TALLA[size].h} cm</p>
-                    <p className="font-mono text-[10px] text-muted-foreground">ancho × alto de estampado</p>
-                  </div>
-                </div>
-                {PRINT_DIMENSIONS_BY_TALLA[size]?.requiresA3 && (
-                  <p className="mt-2 font-mono text-[10px] text-accent flex items-center gap-1.5">
-                    <Info className="w-3 h-3" /> Esta talla requiere plancha A3 o superior
-                  </p>
-                )}
-              </div>
-
-              <button
-                onClick={() => setShowScaleModal(false)}
-                className="w-full bg-foreground text-background font-mono text-sm py-3 hover:bg-accent transition-colors"
-              >
-                CERRAR
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* WHATSAPP PRE-FILTER MODAL */}
-      {waModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setWaModalOpen(false)}></div>
-          
-          <div className="relative bg-background border border-border w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-border flex justify-between items-center bg-muted/50">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
-                <h3 className="font-mono font-bold text-sm uppercase">Filtro de Recepción</h3>
-              </div>
-              <button onClick={() => setWaModalOpen(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleWAContact} className="p-6 space-y-6">
-              <p className="text-sm text-muted-foreground">Para optimizar nuestra comunicación y tiempos de respuesta, por favor responde 3 preguntas rápidas antes de generar el enlace de WhatsApp.</p>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="font-mono text-xs uppercase font-bold">1. ¿Propósito del encargo?</label>
-                  <select 
-                    required
-                    className="w-full p-3 border border-border bg-transparent focus:outline-none focus:border-accent font-mono text-sm"
-                    value={waForm.intent}
-                    onChange={e => setWaForm({...waForm, intent: e.target.value})}
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Uso Personal">Uso Personal</option>
-                    <option value="Regalo">Regalo</option>
-                    <option value="Merchandising Marca">Merchandising Marca / Uniforme</option>
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-mono text-xs uppercase font-bold">2. ¿Fecha límite estimada?</label>
-                  <select 
-                    required
-                    className="w-full p-3 border border-border bg-transparent focus:outline-none focus:border-accent font-mono text-sm"
-                    value={waForm.deadline}
-                    onChange={e => setWaForm({...waForm, deadline: e.target.value})}
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Sin apuro (> 2 semanas)">Sin apuro (Más de 2 semanas)</option>
-                    <option value="Normal (1-2 semanas)">Normal (1-2 semanas)</option>
-                    <option value="Urgente (< 1 semana)">Urgente (Menos de 1 semana)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="font-mono text-xs uppercase font-bold">3. Cantidad aproximada</label>
-                  <select 
-                    required
-                    className="w-full p-3 border border-border bg-transparent focus:outline-none focus:border-accent font-mono text-sm"
-                    value={waForm.qty}
-                    onChange={e => setWaForm({...waForm, qty: e.target.value})}
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="1-5 unidades">1 a 5 unidades</option>
-                    <option value="6-20 unidades">6 a 20 unidades</option>
-                    <option value="20+ unidades">Más de 20 unidades</option>
-                  </select>
-                </div>
-              </div>
-              
-              <button type="submit" className="w-full bg-accent text-white font-mono text-sm p-4 hover:bg-accent/90 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
-                Conectar vía WhatsApp <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-
+      <div className="pb-32 lg:pb-0">
+        <Footer />
+      </div>
     </div>
   );
 }

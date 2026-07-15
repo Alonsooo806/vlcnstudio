@@ -5,7 +5,7 @@ import Inicio from "./components/mockups/vlcn-studio/Inicio";
 import ConfiguradorPremium from "./components/mockups/vlcn-studio/ConfiguradorPremium";
 import Categorias from "./components/mockups/vlcn-studio/Categorias";
 import SubCatalogo from "./components/mockups/vlcn-studio/SubCatalogo";
-import ChatWidget from "./components/mockups/vlcn-studio/ChatWidget";
+import WhatsAppButton from "./components/mockups/vlcn-studio/WhatsAppButton";
 
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 
@@ -160,15 +160,11 @@ function App() {
     );
   }
 
-  // Outside of the Replit canvas preview server, this app is the VLCN
-  // Studio site itself: "/" is the landing page and "/configurador" is the
-  // product configurator (both existing mockup components, wired up as the
-  // real site routes for a standalone deployment).
   const siteRoute = getSiteRoute();
-  if (siteRoute === "home") return <><Inicio /><ChatWidget /></>;
-  if (siteRoute === "configurador") return <><ConfiguradorPremium /><ChatWidget /></>;
-  if (siteRoute === "categorias") return <Categorias />;
-  if (siteRoute === "subcatalogo") return <SubCatalogo />;
+  if (siteRoute === "home") return <><Inicio /><WhatsAppButton /></>;
+  if (siteRoute === "configurador") return <><ConfiguradorPremium /><WhatsAppButton /></>;
+  if (siteRoute === "categorias") return <><Categorias /><WhatsAppButton /></>;
+  if (siteRoute === "subcatalogo") return <><SubCatalogo /><WhatsAppButton /></>;
 
   return <Gallery />;
 }
