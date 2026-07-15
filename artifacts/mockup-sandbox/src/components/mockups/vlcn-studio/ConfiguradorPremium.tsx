@@ -306,7 +306,7 @@ Gracias!`
 
 Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placementNames}.`;
     
-    window.open(`https://wa.me/1234567890?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/56965536529?text=${encodeURIComponent(text)}`, '_blank');
     setWaModalOpen(false);
   };
 

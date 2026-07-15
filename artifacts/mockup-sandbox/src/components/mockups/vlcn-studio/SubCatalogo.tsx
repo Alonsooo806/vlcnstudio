@@ -206,7 +206,7 @@ function FAQSection({ accentHex, accentColor }: { accentHex: string; accentColor
             <p className="font-mono text-[11px] text-zinc-400">Escríbenos directamente por WhatsApp y te respondemos en minutos.</p>
           </div>
           <a
-            href="https://wa.me/56912345678?text=Hola%20VLCN%20Studio%2C%20tengo%20una%20consulta"
+            href="https://wa.me/56965536529?text=Hola%20VLCN%20Studio%2C%20tengo%20una%20consulta"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-5 py-3 font-mono text-xs font-bold tracking-wide shrink-0 transition-all hover:brightness-110"
