@@ -242,22 +242,7 @@ export default function ConfiguradorPremium() {
           <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-8 w-auto object-contain" />
           <h1 className="font-bold tracking-tighter text-xl">VLCN STUDIO</h1>
         </button>
-        <div className="flex items-center gap-6 text-sm font-mono">
-          <span className="hidden md:inline-flex text-muted-foreground">TALLER TÉCNICO</span>
-          <button
-            className="flex items-center gap-2 hover:text-accent transition-colors relative"
-            onClick={handleSaveConfig}
-            title="Guardar configuración"
-          >
-            <Save className="w-4 h-4" />
-            <span className="hidden sm:inline">GUARDAR</span>
-            {savedConfigs.length > 0 && (
-              <span className="absolute -top-2 -right-3 bg-accent text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                {savedConfigs.length}
-              </span>
-            )}
-          </button>
-        </div>
+        <span className="hidden md:inline-flex text-sm font-mono text-muted-foreground">TALLER TÉCNICO</span>
       </header>
 
       {/* NAVEGACIÓN DE RETORNO */}
@@ -425,7 +410,7 @@ export default function ConfiguradorPremium() {
                     onClick={() => setStep(2)}
                     className="bg-foreground text-background px-8 py-4 flex items-center gap-3 hover:bg-accent hover:text-white transition-colors group font-mono text-sm"
                   >
-                    SIGUIENTE PASO <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    SEGUIR <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
               </div>
