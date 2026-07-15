@@ -109,20 +109,52 @@ export default function Inicio() {
         </a>
       </section>
 
-      {/* LETRA CHICA */}
-      <div className="px-8 md:px-20 py-3 text-center border-t border-white/5"
+      {/* PÁGINAS LEGALES / INFO */}
+      <section className="px-8 md:px-20 py-8 border-t border-white/5"
         style={{ background: 'rgba(0,0,0,0.35)' }}>
-        <p className="text-white/25 text-xs font-mono leading-relaxed">
-          Al usar este sitio aceptas nuestros{' '}
+        <p className="font-mono text-[10px] tracking-widest text-white/25 mb-4 text-center">INFORMACIÓN IMPORTANTE</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+          {/* Términos */}
           <a
             href="/terminos"
-            className="underline underline-offset-2 hover:text-white/50 transition-colors"
+            className="group flex items-center gap-4 rounded-lg px-5 py-4 transition-all hover:border-purple-500/40"
+            style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.15)' }}
           >
-            TÉRMINOS Y CONDICIONES
+            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)' }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="rgba(192,132,252,1)" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 002.25 2.25h.75" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-mono text-xs font-bold tracking-wider text-white/70 group-hover:text-white transition-colors">
+                TÉRMINOS Y CONDICIONES
+              </p>
+              <p className="text-white/35 text-xs mt-0.5">Compra, garantía y devoluciones</p>
+            </div>
           </a>
-          {' '}· VLCN Studio · Temuco, Chile
-        </p>
-      </div>
+
+          {/* Cuidado */}
+          <a
+            href="/cuidado"
+            className="group flex items-center gap-4 rounded-lg px-5 py-4 transition-all hover:border-cyan-500/40"
+            style={{ background: 'rgba(34,211,238,0.04)', border: '1px solid rgba(34,211,238,0.12)' }}
+          >
+            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.25)' }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="rgba(34,211,238,1)" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-mono text-xs font-bold tracking-wider text-white/70 group-hover:text-white transition-colors">
+                CUIDADO DE TU PRODUCTO
+              </p>
+              <p className="text-white/35 text-xs mt-0.5">Lavado, secado y planchado DTF</p>
+            </div>
+          </a>
+        </div>
+      </section>
 
       <Footer />
     </div>
