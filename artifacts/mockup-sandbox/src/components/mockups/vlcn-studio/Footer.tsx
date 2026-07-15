@@ -6,32 +6,7 @@ const WA_URL = 'https://wa.me/56965536529';
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 mt-auto" style={{ background: 'rgba(13,0,32,0.85)' }}>
-      <div className="max-w-[1400px] mx-auto px-6 md:px-16 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-
-        {/* ¿Quiénes somos? */}
-        <div className="rounded-lg p-4" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.2)' }}>
-          <h4 className="font-mono text-xs font-bold tracking-widest mb-3 uppercase" style={{ color: '#c084fc' }}>¿Quiénes somos?</h4>
-          <p className="text-white/60 text-sm leading-relaxed mb-4">
-            Somos VLCN Studio, una tienda de personalización textil en Temuco. Gestionamos todo el proceso con tecnología DTF industrial, desde la selección del textil hasta el estampado final. Garantizamos prendas únicas, duraderas y de alta calidad listas para ti.
-          </p>
-          <div className="space-y-2 border-t border-white/10 pt-3">
-            <div className="flex items-start gap-2">
-              <span className="font-mono text-[10px] text-white/35 mt-0.5 shrink-0 tracking-wider">CORREO</span>
-              <a href="mailto:alonsoovalentino@gmail.com" className="text-white/55 text-xs hover:text-purple-300 transition-colors break-all">
-                alonsoovalentino@gmail.com
-              </a>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="font-mono text-[10px] text-white/35 mt-0.5 shrink-0 tracking-wider">CONTACTO</span>
-              <span className="text-white/55 text-xs">
-                09:00–18:00 hrs. ·{' '}
-                <a href={WA_URL} target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">
-                  +56 9 6553 6529
-                </a>
-              </span>
-            </div>
-          </div>
-        </div>
+      <div className="max-w-[1400px] mx-auto px-6 md:px-16 py-10 grid grid-cols-1 md:grid-cols-2 gap-8">
 
         {/* Garantía y Devoluciones */}
         <div>

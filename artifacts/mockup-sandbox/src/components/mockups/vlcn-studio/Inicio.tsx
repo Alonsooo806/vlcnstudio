@@ -114,6 +114,34 @@ export default function Inicio() {
         style={{ background: 'rgba(0,0,0,0.35)' }}>
         <p className="font-mono text-[10px] tracking-widest text-white/25 mb-4 text-center">INFORMACIÓN IMPORTANTE</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+          {/* ¿Quiénes somos? */}
+          <div
+            className="flex items-start gap-4 rounded-lg px-5 py-4 sm:col-span-2"
+            style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.15)' }}
+          >
+            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 mt-0.5"
+              style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)' }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="rgba(192,132,252,1)" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-mono text-xs font-bold tracking-wider text-white/70 mb-1">¿QUIÉNES SOMOS?</p>
+              <p className="text-white/50 text-xs leading-relaxed mb-3">
+                Somos VLCN Studio, una tienda de personalización textil en Temuco. Gestionamos todo el proceso con tecnología DTF industrial, desde la selección del textil hasta el estampado final. Garantizamos prendas únicas, duraderas y de alta calidad listas para ti.
+              </p>
+              <div className="flex flex-wrap gap-x-5 gap-y-1">
+                <span className="text-white/35 text-xs">
+                  <span className="font-mono text-[10px] text-white/25 tracking-wider">CORREO </span>
+                  <a href="mailto:alonsoovalentino@gmail.com" className="hover:text-purple-300 transition-colors">alonsoovalentino@gmail.com</a>
+                </span>
+                <span className="text-white/35 text-xs">
+                  <span className="font-mono text-[10px] text-white/25 tracking-wider">CONTACTO </span>
+                  09:00–18:00 · <a href="https://wa.me/56965536529" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">+56 9 6553 6529</a>
+                </span>
+              </div>
+            </div>
+          </div>
           {/* Términos */}
           <a
             href="/terminos"
