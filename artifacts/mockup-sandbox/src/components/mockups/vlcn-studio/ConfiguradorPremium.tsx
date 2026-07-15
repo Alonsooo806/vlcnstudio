@@ -3,8 +3,10 @@ import {
   ChevronRight, ChevronLeft, ArrowRight, ArrowLeft,
   CheckCircle2, Ruler, Droplets, Info, Plus, Minus,
   MessageCircle, X, Check, Save, Share2, Package, Eye,
-  ShieldCheck, ArrowUpRight, MapPin, Upload, Mail, Send, FileImage
+  ShieldCheck, ArrowUpRight, MapPin, Upload, Mail, Send, FileImage,
+  ShoppingCart, Trash2
 } from 'lucide-react';
+import { cartStore, type CartItem } from './cartStore';
 
 // --- MOCK DATA ---
 const BASES = [
@@ -187,6 +189,8 @@ export default function ConfiguradorPremium() {
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
   const [colorActivelyChosen, setColorActivelyChosen] = useState(false);
   const [showScaleModal, setShowScaleModal] = useState(false);
+
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => cartStore.get());
 
   // Mapa hex → dataURL de la camiseta coloreada por canvas
   const [colorizedUrls, setColorizedUrls] = useState<Record<string, string>>({});
@@ -993,7 +997,79 @@ Configuración actual: ${base.name} (${size}) + Print ${print.name} en ${placeme
           
           <div className="hidden lg:block space-y-6 flex-1 overflow-y-auto pr-2 pb-6">
             <h3 className="font-mono text-sm text-muted-foreground border-b border-border pb-4">RESUMEN TÉCNICO</h3>
-            
+
+            {/* ── CARRITO DE CATÁLOGO ───────────────────────── */}
+            {cartItems.length > 0 && (
+              <div className="border border-accent/30 bg-accent/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <ShoppingCart className="w-3.5 h-3.5 text-accent" />
+                    CATÁLOGO ({cartItems.reduce((s, i) => s + i.cantidad, 0)} items)
+                  </p>
+                  <button
+                    onClick={() => { cartStore.clear(); setCartItems([]); }}
+                    className="font-mono text-[9px] text-muted-foreground hover:text-red-400 transition-colors flex items-center gap-1"
+                    title="Vaciar carrito"
+                  >
+                    <Trash2 className="w-3 h-3" /> VACIAR
+                  </button>
+                </div>
+
+                <div className="space-y-0 border border-border/40">
+                  {cartItems.map((item, idx) => (
+                    <div
+                      key={`${item.id}-${item.talla}`}
+                      className={`flex items-start gap-3 px-3 py-2.5 ${idx < cartItems.length - 1 ? 'border-b border-border/40' : ''}`}
+                    >
+                      {/* Swatch de color de la categoría */}
+                      <div className="w-2 self-stretch rounded-full shrink-0 mt-0.5" style={{ background: item.accentHex }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-[11px] font-bold leading-snug truncate text-foreground">{item.titulo}</p>
+                        <p className="font-mono text-[10px] text-muted-foreground">
+                          Talla <span className="font-bold">{item.talla}</span> · ×{item.cantidad}
+                          {item.emoji ? ` ${item.emoji}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <p className="font-mono text-[11px] font-bold" style={{ color: item.accentHex }}>
+                          {formatCLP(item.precio * item.cantidad)}
+                        </p>
+                        <button
+                          onClick={() => { cartStore.remove(item.id, item.talla); setCartItems(cartStore.get()); }}
+                          className="text-muted-foreground hover:text-red-400 transition-colors"
+                          title="Quitar"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Fila total */}
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-accent/10">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">SUBTOTAL CATÁLOGO</span>
+                    <span className="font-mono text-sm font-bold text-accent">
+                      {formatCLP(cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0))}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="font-mono text-[10px] text-muted-foreground mt-2.5 leading-relaxed">
+                  Estos productos se suman a tu configuración actual para el pedido final.
+                </p>
+              </div>
+            )}
+
+            {cartItems.length === 0 && (
+              <div className="border border-dashed border-border/40 p-4 text-center">
+                <ShoppingCart className="w-5 h-5 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="font-mono text-[10px] text-muted-foreground/50 leading-relaxed">
+                  Agrega productos desde las<br />categorías para verlos aquí.
+                </p>
+              </div>
+            )}
+            {/* ─────────────────────────────────────────────── */}
+
             {/* Summary Items */}
             <div className="space-y-4">
               <div>

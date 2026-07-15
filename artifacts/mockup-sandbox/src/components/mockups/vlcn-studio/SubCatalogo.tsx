@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ShoppingBag, CheckCircle2, XCircle, Star } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, CheckCircle2, XCircle, Star, ShoppingCart, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { cartStore } from './cartStore';
 
 const BASE = import.meta.env.BASE_URL;
 const TALLAS = ['S', 'M', 'L', 'XL', '2XL'] as const;
@@ -17,9 +18,7 @@ interface Producto {
   precio: number;
   stock: boolean;
   stockQty?: number;
-  /** URL de imagen — reemplaza con tus propios diseños */
   imagen?: string;
-  /** Color de fondo del placeholder cuando no hay imagen */
   placeholderBg?: string;
   placeholderEmoji?: string;
   tag?: string;
@@ -105,7 +104,6 @@ const TEMAS: Record<CatId, {
       <div className="pointer-events-none select-none absolute inset-0 overflow-hidden opacity-[0.04]">
         <span className="absolute text-[400px] -right-16 -top-10 leading-none">🎵</span>
         <span className="absolute text-[200px] left-6 bottom-6 leading-none">🎸</span>
-        {/* neon glow lines */}
         <div className="absolute top-0 left-0 right-0 h-px bg-fuchsia-500 blur-sm" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-violet-500 blur-sm" />
       </div>
@@ -133,18 +131,130 @@ const TEMAS: Record<CatId, {
 };
 
 // ─────────────────────────────────────────
+// FAQ DATA
+// ─────────────────────────────────────────
+const FAQS = [
+  {
+    pregunta: '⏱ ¿Cuánto demora el pedido?',
+    respuesta: 'El tiempo de producción es de 3 a 5 días hábiles desde que recibimos tu pago y el diseño confirmado. Para pedidos urgentes (menos de 1 semana), consúltanos por WhatsApp antes de pagar — dependemos de disponibilidad del taller.',
+  },
+  {
+    pregunta: '💳 ¿Cómo se paga?',
+    respuesta: 'Aceptamos transferencia bancaria (Banco Estado, BCI, Santander) y pago por aplicaciones como MACH o CuentaRUT. El pedido entra a producción una vez confirmado el pago. No trabajamos contra entrega para mantener tiempos de producción eficientes.',
+  },
+  {
+    pregunta: '📐 ¿Qué tallas tienen disponibles?',
+    respuesta: 'Trabajamos con tallas S, M, L, XL y 2XL. Todas nuestras camisetas son 100% algodón peinado de 220 g/m², corte recto. Si tienes dudas sobre el tallaje, escríbenos por WhatsApp y te asesoramos según tu cuerpo y preferencia de fit (ajustado vs. holgado).',
+  },
+  {
+    pregunta: '📤 ¿Cómo envío mi diseño?',
+    respuesta: 'Tu archivo debe ser PNG a 300 DPI (píxeles por pulgada) con fondo transparente. Puedes enviarlo por WhatsApp directamente o subirlo en el configurador del sitio. No aceptamos imágenes de Google, capturas de pantalla ni JPG de baja resolución — generan estampados borrosos y no los producimos.',
+  },
+];
+
+// ─────────────────────────────────────────
+// COMPONENTES
+// ─────────────────────────────────────────
+
+function FAQSection({ accentHex, accentColor }: { accentHex: string; accentColor: string }) {
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <section className="px-4 md:px-16 py-14 border-t border-white/5">
+      <div className="max-w-3xl mx-auto">
+        <p className="font-mono text-xs text-zinc-500 tracking-widest mb-2 uppercase">SOPORTE</p>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tighter mb-8 text-white">
+          Preguntas <span className={accentColor}>frecuentes</span>
+        </h2>
+
+        <div className="space-y-2">
+          {FAQS.map((faq, i) => {
+            const isOpen = open === i;
+            return (
+              <div
+                key={i}
+                className="border border-white/10 overflow-hidden transition-all duration-200"
+                style={isOpen ? { borderColor: `${accentHex}40` } : {}}
+              >
+                <button
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-white/5"
+                  style={isOpen ? { background: `${accentHex}08` } : {}}
+                >
+                  <span className="font-mono text-sm font-bold text-white">{faq.pregunta}</span>
+                  {isOpen
+                    ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: accentHex }} />
+                    : <ChevronDown className="w-4 h-4 shrink-0 text-zinc-500" />
+                  }
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 pt-1">
+                    <div className="w-8 h-px mb-3" style={{ background: accentHex }} />
+                    <p className="text-sm text-zinc-300 leading-relaxed">{faq.respuesta}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* CTA WhatsApp */}
+        <div className="mt-8 p-5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          style={{ background: `${accentHex}08`, borderColor: `${accentHex}25` }}>
+          <div>
+            <p className="font-mono text-xs font-bold text-white mb-1">¿Tienes otra consulta?</p>
+            <p className="font-mono text-[11px] text-zinc-400">Escríbenos directamente por WhatsApp y te respondemos en minutos.</p>
+          </div>
+          <a
+            href="https://wa.me/56912345678?text=Hola%20VLCN%20Studio%2C%20tengo%20una%20consulta"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-5 py-3 font-mono text-xs font-bold tracking-wide shrink-0 transition-all hover:brightness-110"
+            style={{ background: accentHex, color: '#000' }}
+          >
+            💬 ESCRIBIR POR WHATSAPP
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────
 // CARD DE PRODUCTO
 // ─────────────────────────────────────────
 function ProductoCard({
   producto,
   accentHex,
   accentColor,
+  categoria,
+  onAdd,
 }: {
   producto: Producto;
   accentHex: string;
   accentColor: string;
+  categoria: string;
+  onAdd: () => void;
 }) {
   const [talla, setTalla] = useState<Talla | null>(null);
+  const [added, setAdded] = useState(false);
+
+  const handleAdd = () => {
+    if (!talla || !producto.stock) return;
+    cartStore.add({
+      id: producto.id,
+      titulo: producto.titulo,
+      precio: producto.precio,
+      talla,
+      cantidad: 1,
+      categoria,
+      accentHex,
+      emoji: producto.placeholderEmoji,
+    });
+    setAdded(true);
+    onAdd();
+    setTimeout(() => setAdded(false), 2500);
+  };
 
   return (
     <div className="group flex flex-col bg-zinc-900 border border-white/5 rounded-none overflow-hidden hover:border-white/20 transition-all duration-200">
@@ -160,7 +270,6 @@ function ProductoCard({
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          /* ── PLACEHOLDER — reemplaza `imagen` en el array de productos ── */
           <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
             <span className="text-7xl leading-none opacity-60 select-none">
               {producto.placeholderEmoji ?? '🖼️'}
@@ -188,6 +297,16 @@ function ProductoCard({
             ? <><CheckCircle2 className="w-2.5 h-2.5" /> STOCK {producto.stockQty ? `(${producto.stockQty})` : ''}</>
             : <><XCircle className="w-2.5 h-2.5" /> AGOTADO</>}
         </span>
+
+        {/* BADGE "AÑADIDO" */}
+        {added && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle2 className="w-10 h-10" style={{ color: accentHex }} />
+              <span className="font-mono text-xs font-bold text-white">¡AÑADIDO!</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* INFO */}
@@ -223,17 +342,30 @@ function ProductoCard({
           </div>
         </div>
 
-        {/* BOTÓN */}
+        {/* BOTÓN AGREGAR AL CARRITO */}
         <button
-          disabled={!producto.stock || !talla}
+          onClick={handleAdd}
+          disabled={!producto.stock || !talla || added}
           className={`mt-auto flex items-center justify-center gap-2 py-3 font-mono text-xs font-bold tracking-wider transition-all
-            ${producto.stock && talla
-              ? 'text-black hover:brightness-90'
-              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}
-          style={producto.stock && talla ? { background: accentHex } : {}}
+            ${added
+              ? 'text-black'
+              : producto.stock && talla
+                ? 'text-black hover:brightness-90 active:scale-95'
+                : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}
+          style={added
+            ? { background: accentHex }
+            : producto.stock && talla
+              ? { background: accentHex }
+              : {}}
         >
-          <ShoppingBag className="w-3.5 h-3.5" />
-          {!producto.stock ? 'AGOTADO' : !talla ? 'ELIGE UNA TALLA' : 'AGREGAR AL PEDIDO'}
+          {added
+            ? <><CheckCircle2 className="w-3.5 h-3.5" /> AÑADIDO AL CARRITO</>
+            : !producto.stock
+              ? <><XCircle className="w-3.5 h-3.5" /> AGOTADO</>
+              : !talla
+                ? <><ShoppingBag className="w-3.5 h-3.5" /> ELIGE UNA TALLA</>
+                : <><ShoppingCart className="w-3.5 h-3.5" /> AGREGAR AL CARRITO</>
+          }
         </button>
       </div>
     </div>
@@ -244,15 +376,37 @@ function ProductoCard({
 // COMPONENTE PRINCIPAL
 // ─────────────────────────────────────────
 export default function SubCatalogo() {
-  // Detecta la categoría desde la URL: /categorias/deporte → 'deporte'
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   const rawCat = pathParts[pathParts.length - 1] as CatId;
   const tema = TEMAS[rawCat] ?? TEMAS.deporte;
+
+  const [cartCount, setCartCount] = useState(() => cartStore.count());
+  const [showCartToast, setShowCartToast] = useState(false);
+  const [lastAdded, setLastAdded] = useState('');
+
+  const handleAdd = (titulo: string) => {
+    const newCount = cartStore.count();
+    setCartCount(newCount);
+    setLastAdded(titulo);
+    setShowCartToast(true);
+    setTimeout(() => setShowCartToast(false), 2800);
+  };
 
   return (
     <div className={`min-h-screen ${tema.bgClass} text-white font-sans relative`}>
       {/* DECORACIÓN DE FONDO */}
       {tema.deco}
+
+      {/* TOAST — producto añadido */}
+      <div className={`fixed top-20 right-4 z-50 flex items-center gap-3 px-4 py-3 shadow-2xl transition-all duration-300 max-w-xs
+        ${showCartToast ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0 pointer-events-none'}`}
+        style={{ background: tema.accentHex, color: '#000' }}>
+        <CheckCircle2 className="w-4 h-4 shrink-0" />
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wide leading-none">Añadido al carrito</p>
+          <p className="font-mono text-[10px] truncate mt-0.5 opacity-70">{lastAdded}</p>
+        </div>
+      </div>
 
       {/* HEADER */}
       <header className={`sticky top-0 z-40 backdrop-blur-md border-b ${tema.headerBg} px-6 py-4 flex items-center justify-between`}>
@@ -267,9 +421,25 @@ export default function SubCatalogo() {
           <img src={`${BASE}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto object-contain opacity-90" />
           <span className="font-bold tracking-tighter text-lg">VLCN STUDIO</span>
         </div>
-        <span className={`hidden md:block font-mono text-xs ${tema.accentColor}`}>
-          {tema.tagline}
-        </span>
+
+        {/* CARRITO */}
+        <button
+          onClick={() => { window.location.href = `${BASE}configurador`; }}
+          className="relative flex items-center gap-2 font-mono text-xs transition-colors hover:text-white"
+          style={{ color: cartCount > 0 ? tema.accentHex : '#71717a' }}
+          title="Ver carrito en el configurador"
+        >
+          <ShoppingCart className="w-5 h-5" />
+          <span className="hidden md:inline">CARRITO</span>
+          {cartCount > 0 && (
+            <span
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold text-black"
+              style={{ background: tema.accentHex }}
+            >
+              {cartCount > 9 ? '9+' : cartCount}
+            </span>
+          )}
+        </button>
       </header>
 
       {/* HERO DE SECCIÓN */}
@@ -342,10 +512,42 @@ export default function SubCatalogo() {
               producto={prod}
               accentHex={tema.accentHex}
               accentColor={tema.accentColor}
+              categoria={rawCat}
+              onAdd={() => handleAdd(prod.titulo)}
             />
           ))}
         </div>
+
+        {/* BANNER IR AL CONFIGURADOR (si hay items en el carrito) */}
+        {cartCount > 0 && (
+          <div
+            className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 border"
+            style={{ borderColor: `${tema.accentHex}30`, background: `${tema.accentHex}08` }}
+          >
+            <div className="flex items-center gap-3">
+              <ShoppingCart className="w-5 h-5 shrink-0" style={{ color: tema.accentHex }} />
+              <div>
+                <p className="font-mono text-sm font-bold text-white">
+                  {cartCount} {cartCount === 1 ? 'producto' : 'productos'} en tu carrito
+                </p>
+                <p className="font-mono text-[11px] text-zinc-400 mt-0.5">
+                  Ve al configurador para ver el resumen completo y finalizar tu pedido
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => { window.location.href = `${BASE}configurador`; }}
+              className="flex items-center gap-2 px-5 py-3 font-mono text-xs font-bold tracking-wide shrink-0 transition-all hover:brightness-110"
+              style={{ background: tema.accentHex, color: '#000' }}
+            >
+              IR AL CONFIGURADOR →
+            </button>
+          </div>
+        )}
       </main>
+
+      {/* PREGUNTAS FRECUENTES */}
+      <FAQSection accentHex={tema.accentHex} accentColor={tema.accentColor} />
 
       {/* FOOTER STRIP */}
       <footer className="px-6 md:px-16 py-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
