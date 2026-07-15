@@ -9,6 +9,7 @@ import WhatsAppButton from "./components/mockups/vlcn-studio/WhatsAppButton";
 import TerminosCondiciones from "./components/mockups/vlcn-studio/TerminosCondiciones";
 import CuidadoProducto from "./components/mockups/vlcn-studio/CuidadoProducto";
 import PreguntasRespuestas from "./components/mockups/vlcn-studio/PreguntasRespuestas";
+import QuienesSomos from "./components/mockups/vlcn-studio/QuienesSomos";
 
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 
@@ -136,7 +137,7 @@ function getPreviewPath(): string | null {
   return match ? match[1] : null;
 }
 
-function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" | "terminos" | "cuidado" | "faq" | null {
+function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" | "terminos" | "cuidado" | "faq" | "quienes" | null {
   const basePath = getBasePath();
   const { pathname } = window.location;
   const local =
@@ -151,6 +152,7 @@ function getSiteRoute(): "home" | "configurador" | "categorias" | "subcatalogo" 
   if (local === "/terminos") return "terminos";
   if (local === "/cuidado") return "cuidado";
   if (local === "/faq") return "faq";
+  if (local === "/quienes") return "quienes";
   return null;
 }
 
@@ -174,6 +176,7 @@ function App() {
   if (siteRoute === "terminos") return <TerminosCondiciones />;
   if (siteRoute === "cuidado") return <CuidadoProducto />;
   if (siteRoute === "faq") return <PreguntasRespuestas />;
+  if (siteRoute === "quienes") return <QuienesSomos />;
 
   return <Gallery />;
 }
