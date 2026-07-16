@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, ShoppingBag, CheckCircle2, XCircle, ShoppingCart, X, Trash2 } from 'lucide-react';
 import { cartStore, type CartItem } from './cartStore';
+import { catalogStore } from './catalogStore';
 import { navTo } from './navigate';
 import Footer from './Footer';
 
@@ -167,7 +168,14 @@ function CartModal({ items, accentHex, onClose, onRemove }: {
             </div>
           )}
           <button
-            onClick={() => { onClose(); navTo('configurador'); }}
+            onClick={() => {
+              if (items.length > 0 && items[0].imagen) {
+                catalogStore.set({ id: items[0].id, titulo: items[0].titulo, imagen: items[0].imagen, precio: items[0].precio });
+              } else {
+                catalogStore.clear();
+              }
+              onClose(); navTo('configurador');
+            }}
             disabled={items.length === 0}
             className="w-full flex items-center justify-center gap-3 py-4 font-mono text-sm font-bold tracking-widest transition-all hover:brightness-110 active:scale-98 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ background: items.length > 0 ? accentHex : '#27272a', color: items.length > 0 ? '#000' : '#71717a' }}

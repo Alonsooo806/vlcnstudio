@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Check, Ruler, Plus, Minus, MapPin, ShieldCheck, Upload, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Check, Ruler, Plus, Minus, MapPin, ShieldCheck, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 import { navTo } from './navigate';
+import { catalogStore } from './catalogStore';
 import Footer from './Footer';
 
 // ─── DATA ────────────────────────────────────────────────────────────
@@ -75,20 +76,23 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   ];
 }
 
-async function colorize(hex: string): Promise<string> {
-  if (cache.has(hex)) return cache.get(hex)!;
+// src can be the local shirt template or an external Cloudinary URL
+async function colorize(hex: string, src: string): Promise<string> {
+  const cacheKey = `${src}::${hex}`;
+  if (cache.has(cacheKey)) return cache.get(cacheKey)!;
   return new Promise(resolve => {
     const img = new window.Image();
+    img.crossOrigin = 'anonymous'; // needed for Cloudinary + canvas read
     img.onload = () => {
       const cvs = document.createElement('canvas');
       cvs.width = img.naturalWidth; cvs.height = img.naturalHeight;
       const ctx = cvs.getContext('2d', { willReadFrequently: true });
-      if (!ctx) { resolve(SHIRT_SRC); return; }
+      if (!ctx) { resolve(src); return; }
       ctx.drawImage(img, 0, 0);
 
-      // White shirt → return as-is (base template)
+      // White → return original (no tinting)
       if (hex === '#FFFFFF') {
-        const u = cvs.toDataURL('image/png'); cache.set(hex, u); resolve(u); return;
+        const u = cvs.toDataURL('image/png'); cache.set(cacheKey, u); resolve(u); return;
       }
 
       // Parse target color → HSL
@@ -97,42 +101,30 @@ async function colorize(hex: string): Promise<string> {
       const tb = parseInt(hex.slice(5,7),16)/255;
       const [tH, tS, tL] = rgbToHsl(tr, tg, tb);
 
-      // Lightness band for this color: shadows → highlights on the fabric
-      // shadL: darkest shadow point (30% of target L)
-      // hlL:   brightest highlight (target L + 0.35, max 1.0)
-      // This makes black stay dark-with-sheen, red stay vivid-red, etc.
+      // Lightness band: shadows → highlights on the fabric
       const shadL = tL * 0.30;
       const hlL   = Math.min(1.0, tL + 0.35);
-
-      // Fabric threshold: pixels below this L are the dark stone background → skip
-      // Raised to 0.40 to reliably exclude the gray textured surface
+      // Pixels below FABRIC_MIN are background/shadow → skip (stays original)
       const FABRIC_MIN = 0.40;
 
       const id = ctx.getImageData(0, 0, cvs.width, cvs.height);
       const px = id.data;
 
       for (let i = 0; i < px.length; i += 4) {
-        if (px[i+3] < 10) continue;                         // transparent → skip
+        if (px[i+3] < 10) continue;
 
         const r = px[i]/255, g = px[i+1]/255, b = px[i+2]/255;
         const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
         const pixSat = mx === 0 ? 0 : (mx - mn) / mx;
 
-        // Only recolor near-achromatic (fabric) pixels — skip coloured design details
+        // Only recolor near-achromatic (fabric) pixels — design colours stay untouched
         if (pixSat < 0.32) {
           const [,, L] = rgbToHsl(r, g, b);
-          // Exclude dark background pixels (stone texture stays untouched)
-          if (L < FABRIC_MIN) continue;
+          if (L < FABRIC_MIN) continue; // background / deep shadow → untouched
 
-          // Normalise this pixel's brightness within the shirt's light range [FABRIC_MIN..1]
-          const norm = (L - FABRIC_MIN) / (1.0 - FABRIC_MIN); // 0 = shadow edge, 1 = pure white
-
-          // Map normalised brightness → target color's lightness band
-          // Preserves folds/shadows/highlights for any color including black
+          const norm = (L - FABRIC_MIN) / (1.0 - FABRIC_MIN);
           const newL = shadL + (hlL - shadL) * norm;
-
-          // Taper saturation only at extreme highlights so they stay white-ish (natural sheen)
-          const sat = norm > 0.92 ? tS * Math.max(0, (1 - norm) / 0.08) : tS;
+          const sat  = norm > 0.92 ? tS * Math.max(0, (1 - norm) / 0.08) : tS;
 
           const [nr, ng2, nb2] = hslToRgb(tH, sat, newL);
           px[i] = nr; px[i+1] = ng2; px[i+2] = nb2;
@@ -140,10 +132,10 @@ async function colorize(hex: string): Promise<string> {
       }
 
       ctx.putImageData(id, 0, 0);
-      const u = cvs.toDataURL('image/png'); cache.set(hex, u); resolve(u);
+      const u = cvs.toDataURL('image/png'); cache.set(cacheKey, u); resolve(u);
     };
-    img.onerror = () => resolve(SHIRT_SRC);
-    img.src = SHIRT_SRC;
+    img.onerror = () => resolve(src);
+    img.src = src;
   });
 }
 
@@ -157,33 +149,39 @@ export default function ConfiguradorPremium() {
   const [design,     setDesign]     = useState<string|null>(null);
   const [showScale,  setShowScale]  = useState(false);
   const [urls,       setUrls]       = useState<Record<string,string>>({});
+  const [catalogItem, setCatalogItem] = useState(() => catalogStore.get());
   const fileRef = React.useRef<HTMLInputElement>(null);
 
-  // preload all colorized shirts
+  // catalog mode uses the product photo; standard mode uses the local shirt template
+  const activeSrc = catalogItem?.imagen ?? SHIRT_SRC;
+
+  // preload all colorized versions for the active source
   useEffect(() => {
     let alive = true;
+    setUrls({}); // clear stale cache when source changes
     (async () => {
       for (const c of COLORS) {
-        const u = await colorize(c.hex);
+        const u = await colorize(c.hex, activeSrc);
         if (alive) setUrls(p => ({ ...p, [c.hex]: u }));
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [activeSrc]);
 
   const togglePlacement = (id: string) =>
     setPlacements(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
   const currentColor  = COLORS.find(c=>c.id===color)!;
-  const shirtUrl      = urls[currentColor.hex] || SHIRT_SRC;
+  const shirtUrl      = urls[currentColor.hex] ?? activeSrc;
   const placementCost = PLACEMENTS.filter(p=>placements.includes(p.id)).reduce((s,p)=>s+p.price,0);
   const unitPrice     = BASE_PRICE + placementCost;
   const subtotal      = unitPrice * qty;
   const total         = subtotal + (delivery==='delivery' ? DELIVERY_FEE : 0);
 
   const openWA = () => {
-    const pl = PLACEMENTS.filter(p=>placements.includes(p.id)).map(p=>p.name).join(', ') || '–';
-    const msg = `Hola VLCN Studio 👋\n\nQuiero pedir una camiseta personalizada:\n• Color: ${currentColor.name}\n• Talla: ${size}\n• Cantidad: ${qty}\n• Estampado: ${pl}\n• Envío: ${delivery==='delivery'?'Delivery':'Punto de encuentro'}\n• Total estimado: ${fmt(total)} CLP\n\n¿Me ayudan a coordinar?`;
+    const pl  = PLACEMENTS.filter(p=>placements.includes(p.id)).map(p=>p.name).join(', ') || '–';
+    const dis = catalogItem ? `• Diseño: ${catalogItem.titulo}\n` : '';
+    const msg = `Hola VLCN Studio 👋\n\nQuiero pedir una camiseta personalizada:\n${dis}• Color: ${currentColor.name}\n• Talla: ${size}\n• Cantidad: ${qty}\n• Estampado: ${pl}\n• Envío: ${delivery==='delivery'?'Delivery':'Punto de encuentro'}\n• Total estimado: ${fmt(total)} CLP\n\n¿Me ayudan a coordinar?`;
     window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -206,56 +204,106 @@ export default function ConfiguradorPremium() {
       <main className="flex-1 flex flex-col lg:flex-row">
 
         {/* ── LEFT: SHIRT VIEWER ── */}
-        <div className="lg:sticky lg:top-[61px] lg:self-start lg:w-[45%] lg:h-[calc(100vh-61px)] flex flex-col items-center justify-center bg-zinc-100 p-8 gap-6 min-h-[300px]">
-          {/* Shirt image */}
-          <div className="relative w-full max-w-[340px] aspect-square flex items-center justify-center">
-            <img
-              key={currentColor.hex}
-              src={shirtUrl}
-              alt={`Camiseta ${currentColor.name}`}
-              className="w-full h-full object-contain drop-shadow-2xl select-none"
-              draggable={false}
-            />
-            {/* design overlay */}
-            {design && (
-              <div className="absolute pointer-events-none" style={{ width: '55%', left: '22.5%', top: '20%' }}>
-                <img src={design} alt="Tu diseño" className="w-full h-auto object-contain drop-shadow" />
+        <div className={`lg:sticky lg:top-[61px] lg:self-start lg:w-[45%] lg:h-[calc(100vh-61px)] flex flex-col items-center justify-center p-8 gap-6 min-h-[300px] ${catalogItem ? 'bg-zinc-900' : 'bg-zinc-100'}`}>
+
+          {catalogItem ? (
+            /* ── CATALOG MODE: full product photo with color tinting ── */
+            <>
+              {/* Product name badge */}
+              <p className="font-mono text-[10px] tracking-widest text-zinc-400 uppercase self-start">
+                {catalogItem.titulo}
+              </p>
+
+              {/* Photo preview */}
+              <div className="relative w-full max-w-[360px] aspect-square rounded overflow-hidden">
+                <img
+                  key={currentColor.hex}
+                  src={shirtUrl}
+                  alt={catalogItem.titulo}
+                  className="w-full h-full object-cover select-none transition-opacity duration-300"
+                  draggable={false}
+                />
+                {/* loading shimmer while colorize runs */}
+                {!urls[currentColor.hex] && (
+                  <div className="absolute inset-0 bg-zinc-800 animate-pulse" />
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Color dots */}
-          <div className="flex items-center gap-2">
-            {COLORS.map(c => (
+              {/* Color dots */}
+              <div className="flex items-center gap-2">
+                {COLORS.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setColor(c.id)}
+                    title={c.name}
+                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-white' : 'border-zinc-600 hover:scale-110'}`}
+                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                  />
+                ))}
+              </div>
+
+              {/* ELIGE OTRO: clears selection → standard custom mode */}
               <button
-                key={c.id}
-                onClick={() => setColor(c.id)}
-                title={c.name}
-                className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-foreground' : 'border-white/60 hover:scale-110'}`}
-                style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}
-              />
-            ))}
-          </div>
+                onClick={() => { catalogStore.clear(); setCatalogItem(null); setColor('blanco'); }}
+                className="font-mono text-[11px] text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-400 px-4 py-2 transition-colors tracking-wider"
+              >
+                ← ELIGE OTRO DISEÑO
+              </button>
+            </>
+          ) : (
+            /* ── STANDARD MODE: plain shirt + custom upload ── */
+            <>
+              {/* Shirt image */}
+              <div className="relative w-full max-w-[340px] aspect-square flex items-center justify-center">
+                <img
+                  key={currentColor.hex}
+                  src={shirtUrl}
+                  alt={`Camiseta ${currentColor.name}`}
+                  className="w-full h-full object-contain drop-shadow-2xl select-none"
+                  draggable={false}
+                />
+                {/* design overlay */}
+                {design && (
+                  <div className="absolute pointer-events-none" style={{ width: '55%', left: '22.5%', top: '20%' }}>
+                    <img src={design} alt="Tu diseño" className="w-full h-auto object-contain drop-shadow" />
+                  </div>
+                )}
+              </div>
 
-          {/* Upload design */}
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 border border-zinc-300 bg-white px-5 py-2.5 font-mono text-xs font-bold tracking-wider hover:border-zinc-500 transition-colors"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            {design ? 'CAMBIAR DISEÑO' : 'SUBIR MI DISEÑO'}
-          </button>
-          {design && (
-            <button onClick={() => setDesign(null)} className="font-mono text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors -mt-3">
-              quitar diseño
-            </button>
-          )}
-          <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden"
-            onChange={e => { const f=e.target.files?.[0]; if(f) setDesign(URL.createObjectURL(f)); }} />
-          {design && (
-            <p className="font-mono text-[10px] text-zinc-400 text-center -mt-2 max-w-[240px] leading-relaxed">
-              PNG a 300 DPI con fondo transparente para mejor resultado
-            </p>
+              {/* Color dots */}
+              <div className="flex items-center gap-2">
+                {COLORS.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setColor(c.id)}
+                    title={c.name}
+                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-foreground' : 'border-white/60 hover:scale-110'}`}
+                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}
+                  />
+                ))}
+              </div>
+
+              {/* Upload design */}
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-2 border border-zinc-300 bg-white px-5 py-2.5 font-mono text-xs font-bold tracking-wider hover:border-zinc-500 transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                {design ? 'CAMBIAR DISEÑO' : 'SUBIR MI DISEÑO'}
+              </button>
+              {design && (
+                <button onClick={() => setDesign(null)} className="font-mono text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors -mt-3">
+                  quitar diseño
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden"
+                onChange={e => { const f=e.target.files?.[0]; if(f) setDesign(URL.createObjectURL(f)); }} />
+              {design && (
+                <p className="font-mono text-[10px] text-zinc-400 text-center -mt-2 max-w-[240px] leading-relaxed">
+                  PNG a 300 DPI con fondo transparente para mejor resultado
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -265,8 +313,12 @@ export default function ConfiguradorPremium() {
           {/* Title */}
           <div className="px-8 py-8">
             <p className="font-mono text-xs text-muted-foreground mb-2">PERSONALIZA TU PEDIDO</p>
-            <h2 className="text-3xl font-bold tracking-tighter">Camiseta Manga Corta</h2>
-            <p className="text-muted-foreground text-sm mt-1">100% algodón peinado · 220 g/m² · S a 2XL</p>
+            <h2 className="text-3xl font-bold tracking-tighter">
+              {catalogItem ? catalogItem.titulo : 'Camiseta Manga Corta'}
+            </h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              {catalogItem ? 'Diseño de catálogo · elige tu color y talla' : '100% algodón peinado · 220 g/m² · S a 2XL'}
+            </p>
           </div>
 
           {/* COLOR */}
