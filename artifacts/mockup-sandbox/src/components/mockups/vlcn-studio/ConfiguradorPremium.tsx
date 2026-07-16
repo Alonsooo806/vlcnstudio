@@ -39,8 +39,41 @@ const fmt = (n: number) =>
   '$' + n.toLocaleString('es-CL');
 
 // ─── COLORIZE ────────────────────────────────────────────────────────
-const SHIRT_SRC  = 'generated_images/vlcn-shirt-blanco.png';
-const cache      = new Map<string, string>();
+const SHIRT_SRC = 'generated_images/vlcn-shirt-blanco.png';
+const cache     = new Map<string, string>();
+
+// Convert RGB [0..1] → [h 0..1, s 0..1, l 0..1]
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  const l = (mx + mn) / 2;
+  if (mx === mn) return [0, 0, l];
+  const d = mx - mn;
+  const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  let h = 0;
+  if (mx === r)      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (mx === g) h = ((b - r) / d + 2) / 6;
+  else               h = ((r - g) / d + 4) / 6;
+  return [h, s, l];
+}
+
+// Convert [h 0..1, s 0..1, l 0..1] → RGB [0..255]
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const hue2rgb = (t: number) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+  };
+  return [
+    Math.round(hue2rgb(h + 1/3) * 255),
+    Math.round(hue2rgb(h)       * 255),
+    Math.round(hue2rgb(h - 1/3) * 255),
+  ];
+}
 
 async function colorize(hex: string): Promise<string> {
   if (cache.has(hex)) return cache.get(hex)!;
@@ -52,17 +85,40 @@ async function colorize(hex: string): Promise<string> {
       const ctx = cvs.getContext('2d', { willReadFrequently: true });
       if (!ctx) { resolve(SHIRT_SRC); return; }
       ctx.drawImage(img, 0, 0);
-      if (hex === '#FFFFFF') { const u = cvs.toDataURL('image/jpeg', 0.92); cache.set(hex, u); resolve(u); return; }
-      const eff = hex === '#000000' ? '#141414' : hex;
-      const cr = parseInt(eff.slice(1,3),16)/255, cg = parseInt(eff.slice(3,5),16)/255, cb = parseInt(eff.slice(5,7),16)/255;
-      const d = ctx.getImageData(0,0,cvs.width,cvs.height); const px = d.data;
-      for (let i=0;i<px.length;i+=4) {
-        if (px[i+3]===0) continue;
-        const mx=Math.max(px[i],px[i+1],px[i+2]), mn=Math.min(px[i],px[i+1],px[i+2]);
-        if (mx===0||(mx-mn)/mx<0.28) { px[i]=Math.round(px[i]*cr); px[i+1]=Math.round(px[i+1]*cg); px[i+2]=Math.round(px[i+2]*cb); }
+
+      // White shirt → return as-is (base template)
+      if (hex === '#FFFFFF') {
+        const u = cvs.toDataURL('image/png'); cache.set(hex, u); resolve(u); return;
       }
-      ctx.putImageData(d,0,0);
-      const u = cvs.toDataURL('image/jpeg', 0.92); cache.set(hex, u); resolve(u);
+
+      // Parse target color → HSL
+      const tr = parseInt(hex.slice(1,3),16)/255;
+      const tg = parseInt(hex.slice(3,5),16)/255;
+      const tb = parseInt(hex.slice(5,7),16)/255;
+      const [tH, tS] = rgbToHsl(tr, tg, tb);
+
+      const id = ctx.getImageData(0, 0, cvs.width, cvs.height);
+      const px = id.data;
+
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i+3] < 10) continue;                         // transparent → skip
+
+        const r = px[i]/255, g = px[i+1]/255, b = px[i+2]/255;
+        const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+        const pixSat = mx === 0 ? 0 : (mx - mn) / mx;
+
+        // Only recolor near-achromatic (fabric) pixels — skip any coloured detail
+        if (pixSat < 0.32) {
+          const [,, L] = rgbToHsl(r, g, b);
+          // Highlights (L > ~0.85) fade naturally to white → taper saturation
+          const effectiveSat = tS * Math.min(1, Math.max(0, (1 - L) / 0.85) * 1.15);
+          const [nr, ng2, nb2] = hslToRgb(tH, effectiveSat, L);
+          px[i] = nr; px[i+1] = ng2; px[i+2] = nb2;
+        }
+      }
+
+      ctx.putImageData(id, 0, 0);
+      const u = cvs.toDataURL('image/png'); cache.set(hex, u); resolve(u);
     };
     img.onerror = () => resolve(SHIRT_SRC);
     img.src = SHIRT_SRC;
