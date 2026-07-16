@@ -461,6 +461,18 @@ export default function ConfiguradorPremium() {
             <p className="font-mono text-[10px] text-background/40 mt-3 text-center">
               Te enviamos un resumen y coordinamos el diseño directo.
             </p>
+
+            {/* Pay CTA */}
+            <button
+              disabled
+              className="w-full flex items-center justify-between px-6 py-5 mt-3 font-mono font-bold tracking-wider border border-background/30 text-background/60 cursor-not-allowed"
+            >
+              <span className="text-base">FINALIZAR COMPRA</span>
+              <span className="text-background/40 text-sm">→</span>
+            </button>
+            <p className="font-mono text-[10px] text-background/30 mt-2 text-center">
+              Pago en línea disponible próximamente.
+            </p>
           </section>
 
           <Footer />
