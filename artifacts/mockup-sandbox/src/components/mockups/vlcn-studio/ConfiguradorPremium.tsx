@@ -39,7 +39,7 @@ const fmt = (n: number) =>
   '$' + n.toLocaleString('es-CL');
 
 // ─── COLORIZE ────────────────────────────────────────────────────────
-const SHIRT_SRC = 'generated_images/vlcn-shirt-blanco.png';
+const SHIRT_SRC = 'generated_images/vlcn-shirt-nueva.jpg';
 const cache     = new Map<string, string>();
 
 // Convert RGB [0..1] → [h 0..1, s 0..1, l 0..1]
