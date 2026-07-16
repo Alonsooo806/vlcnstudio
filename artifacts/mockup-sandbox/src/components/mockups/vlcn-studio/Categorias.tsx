@@ -80,7 +80,7 @@ export default function Categorias() {
           <ArrowLeft className="w-4 h-4" /> INICIO
         </button>
         <div className="flex items-center gap-3">
-          <img src={`${BASE}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto object-contain opacity-90" />
+          <img src={`${BASE}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto object-contain invert" />
           <span className="font-bold tracking-tighter text-lg">VLCN STUDIO</span>
         </div>
         <span className="font-mono text-xs text-zinc-500 hidden md:block">¿QUÉ QUIERES PERSONALIZAR?</span>

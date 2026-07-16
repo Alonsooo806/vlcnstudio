@@ -367,7 +367,7 @@ export default function SubCatalogo() {
           <ArrowLeft className="w-4 h-4" /> CATEGORÍAS
         </button>
         <div className="flex items-center gap-3">
-          <img src={`${BASE}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto object-contain opacity-90" />
+          <img src={`${BASE}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto object-contain invert" />
           <span className="font-bold tracking-tighter text-lg">VLCN STUDIO</span>
         </div>
         <button

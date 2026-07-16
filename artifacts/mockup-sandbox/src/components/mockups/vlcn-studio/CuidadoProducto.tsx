@@ -95,6 +95,7 @@ export default function CuidadoProducto() {
         <div className="flex items-center gap-3">
           <img
             src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`}
+              style={{ filter: 'invert(1)' }}
             alt="VLCN Studio"
             className="h-7 w-auto opacity-80"
           />

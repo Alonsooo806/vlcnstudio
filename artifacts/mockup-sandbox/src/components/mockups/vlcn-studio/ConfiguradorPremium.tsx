@@ -197,7 +197,7 @@ export default function ConfiguradorPremium() {
           <span className="font-mono text-xs">INICIO</span>
         </button>
         <div className="flex items-center gap-3 ml-2">
-          <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto" />
+          <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-7 w-auto invert" />
           <span className="font-bold tracking-tighter text-lg">VLCN STUDIO</span>
         </div>
       </header>

@@ -14,7 +14,7 @@ export default function Inicio() {
       <header className="px-6 py-5 flex items-center justify-between border-b border-white/10"
         style={{ background: 'rgba(13,0,32,0.7)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 40 }}>
         <div className="flex items-center gap-3">
-          <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-8 w-auto" />
+          <img src={`${import.meta.env.BASE_URL}generated_images/vlcn-logo.png`} alt="VLCN Studio" className="h-8 w-auto invert" />
           <span className="font-bold tracking-tighter text-xl">VLCN STUDIO</span>
         </div>
         <span className="font-mono text-xs text-white/30 hidden md:block">TEMUCO · CHILE</span>
