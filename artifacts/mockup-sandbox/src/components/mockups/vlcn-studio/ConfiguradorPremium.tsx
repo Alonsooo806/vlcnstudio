@@ -110,8 +110,12 @@ async function colorize(hex: string): Promise<string> {
         // Only recolor near-achromatic (fabric) pixels — skip any coloured detail
         if (pixSat < 0.32) {
           const [,, L] = rgbToHsl(r, g, b);
-          // Highlights (L > ~0.85) fade naturally to white → taper saturation
-          const effectiveSat = tS * Math.min(1, Math.max(0, (1 - L) / 0.85) * 1.15);
+          // Skip dark background — only colorize shirt fabric (light areas)
+          if (L < 0.22) continue;
+          // Keep full saturation across the shirt body;
+          // only taper to white at the very brightest highlights (L > 0.88)
+          const highlightFade = L > 0.88 ? Math.max(0, (1 - L) / 0.12) : 1.0;
+          const effectiveSat = tS * highlightFade;
           const [nr, ng2, nb2] = hslToRgb(tH, effectiveSat, L);
           px[i] = nr; px[i+1] = ng2; px[i+2] = nb2;
         }
