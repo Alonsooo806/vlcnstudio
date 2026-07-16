@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, ShoppingBag, CheckCircle2, XCircle, ShoppingCart, X } from 'lucide-react';
-import { cartStore } from './cartStore';
+import React, { useState, useCallback } from 'react';
+import { ArrowLeft, ArrowRight, ShoppingBag, CheckCircle2, XCircle, ShoppingCart, X, Trash2 } from 'lucide-react';
+import { cartStore, type CartItem } from './cartStore';
 import { navTo } from './navigate';
 import Footer from './Footer';
 
@@ -70,22 +70,161 @@ const TEMAS: Record<CatId, {
   peliculas: { label: 'PELÍCULAS & SERIES', accentHex: '#fbbf24', bgClass: 'bg-zinc-950', headerBg: 'bg-zinc-950/90 border-amber-900/30',   productos: CATALOGO_PELICULAS, tagline: 'Culto · Acción · Drama · Sci-Fi' },
 };
 
-function ProductoCard({ producto, accentHex, categoria, onAdd }: {
+/* ─── Cart Modal ─── */
+function CartModal({ items, accentHex, onClose, onRemove }: {
+  items: CartItem[];
+  accentHex: string;
+  onClose: () => void;
+  onRemove: (id: string, talla: string) => void;
+}) {
+  const total = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  const totalUnits = items.reduce((s, i) => s + i.cantidad, 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end sm:justify-end" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Panel */}
+      <div
+        className="relative w-full sm:w-[420px] h-[90vh] sm:h-screen flex flex-col shadow-2xl"
+        style={{ background: '#0f0f13', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+          <div className="flex items-center gap-3">
+            <ShoppingCart className="w-5 h-5" style={{ color: accentHex }} />
+            <span className="font-mono text-sm font-bold tracking-wider text-white">CARRITO</span>
+            {totalUnits > 0 && (
+              <span className="w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold text-black" style={{ background: accentHex }}>
+                {totalUnits}
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-white/10 transition-colors text-zinc-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto py-3">
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-zinc-600">
+              <ShoppingBag className="w-12 h-12" />
+              <p className="font-mono text-xs tracking-widest">CARRITO VACÍO</p>
+              <p className="text-zinc-700 text-sm">Agrega prendas para continuar</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/5">
+              {items.map((item) => (
+                <li key={`${item.id}-${item.talla}`} className="flex items-center gap-3 px-5 py-4">
+                  {/* Thumbnail */}
+                  <div
+                    className="w-14 h-14 shrink-0 rounded overflow-hidden flex items-center justify-center text-2xl"
+                    style={{ background: '#1c1c22' }}
+                  >
+                    {item.imagen ? (
+                      <img src={item.imagen} alt={item.titulo} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="leading-none">{item.emoji ?? '🖼️'}</span>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white leading-tight line-clamp-1">{item.titulo}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-white/15 text-white/60">
+                        {item.talla}
+                      </span>
+                      <span className="font-mono text-[10px] text-white/40">×{item.cantidad}</span>
+                    </div>
+                    <p className="font-mono text-xs font-bold mt-1" style={{ color: accentHex }}>
+                      {formatCLP(item.precio * item.cantidad)}
+                    </p>
+                  </div>
+
+                  {/* Remove */}
+                  <button
+                    onClick={() => onRemove(item.id, item.talla)}
+                    className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-white/8 px-5 py-5 space-y-4">
+          {items.length > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs text-zinc-400 tracking-wider">TOTAL</span>
+              <span className="font-mono text-xl font-bold text-white">{formatCLP(total)}</span>
+            </div>
+          )}
+          <button
+            onClick={() => { onClose(); navTo('configurador'); }}
+            disabled={items.length === 0}
+            className="w-full flex items-center justify-center gap-3 py-4 font-mono text-sm font-bold tracking-widest transition-all hover:brightness-110 active:scale-98 disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ background: items.length > 0 ? accentHex : '#27272a', color: items.length > 0 ? '#000' : '#71717a' }}
+          >
+            AVANZAR <ArrowRight className="w-4 h-4" />
+          </button>
+          {items.length === 0 && (
+            <p className="text-zinc-600 text-xs font-mono text-center">Agrega al menos 1 prenda para avanzar</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Producto Card ─── */
+function ProductoCard({ producto, accentHex, categoria, productCartCount, onAdd }: {
   producto: Producto;
   accentHex: string;
   categoria: string;
+  productCartCount: number;
   onAdd: () => void;
 }) {
   const [talla, setTalla] = useState<Talla | null>(null);
-  const [added, setAdded] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const atLimit = productCartCount >= 5;
 
   const handleAdd = () => {
-    if (!talla || !producto.stock) return;
-    cartStore.add({ id: producto.id, titulo: producto.titulo, precio: producto.precio, talla, cantidad: 1, categoria, accentHex, emoji: producto.placeholderEmoji });
-    setAdded(true);
-    onAdd();
-    setTimeout(() => setAdded(false), 2500);
+    if (!talla || !producto.stock || atLimit) return;
+    const result = cartStore.add({
+      id: producto.id,
+      titulo: producto.titulo,
+      precio: producto.precio,
+      talla,
+      cantidad: 1,
+      categoria,
+      accentHex,
+      emoji: producto.placeholderEmoji,
+      imagen: producto.imagen,
+    });
+    if (result === 'ok') {
+      setFlash(true);
+      setTalla(null); // reset talla so user can pick another
+      onAdd();
+      setTimeout(() => setFlash(false), 1200);
+    }
   };
+
+  const btnLabel = () => {
+    if (!producto.stock) return <><XCircle className="w-3.5 h-3.5" /> AGOTADO</>;
+    if (atLimit) return <><CheckCircle2 className="w-3.5 h-3.5" /> LÍMITE (5)</>;
+    if (flash) return <><CheckCircle2 className="w-3.5 h-3.5" /> ¡AÑADIDO!</>;
+    if (!talla) return <><ShoppingBag className="w-3.5 h-3.5" /> ELIGE TALLA</>;
+    return <><ShoppingCart className="w-3.5 h-3.5" /> AGREGAR</>;
+  };
+
+  const btnDisabled = !producto.stock || !talla || atLimit || flash;
 
   return (
     <div className="group flex flex-col bg-zinc-900 border border-white/5 overflow-hidden hover:border-white/20 transition-all duration-200">
@@ -108,12 +247,19 @@ function ProductoCard({ producto, accentHex, categoria, onAdd }: {
           {producto.stock ? <><CheckCircle2 className="w-2.5 h-2.5" /> STOCK</> : <><XCircle className="w-2.5 h-2.5" /> AGOTADO</>}
         </span>
 
-        {added && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle2 className="w-10 h-10" style={{ color: accentHex }} />
-              <span className="font-mono text-xs font-bold text-white">¡AÑADIDO!</span>
-            </div>
+        {/* Cart badge */}
+        {productCartCount > 0 && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-full backdrop-blur-sm"
+            style={{ background: `${accentHex}dd` }}>
+            <ShoppingCart className="w-3 h-3 text-black" />
+            <span className="font-mono text-[10px] font-bold text-black">{productCartCount}</span>
+          </div>
+        )}
+
+        {/* Flash overlay */}
+        {flash && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-none">
+            <CheckCircle2 className="w-10 h-10" style={{ color: accentHex }} />
           </div>
         )}
       </div>
@@ -124,18 +270,21 @@ function ProductoCard({ producto, accentHex, categoria, onAdd }: {
         <p className="font-mono text-lg font-bold" style={{ color: accentHex }}>{formatCLP(producto.precio)}</p>
 
         <div>
-          <p className="font-mono text-[10px] text-zinc-500 mb-2 tracking-wider">TALLA</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-mono text-[10px] text-zinc-500 tracking-wider">TALLA</p>
+            {atLimit && <p className="font-mono text-[10px] tracking-wider" style={{ color: accentHex }}>MÁX. 5 PRENDAS</p>}
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {TALLAS.map((t) => (
               <button
                 key={t}
-                onClick={() => setTalla(t === talla ? null : t)}
-                disabled={!producto.stock}
+                onClick={() => !atLimit && setTalla(t === talla ? null : t)}
+                disabled={!producto.stock || atLimit}
                 className={`w-9 h-9 font-mono text-xs font-bold border transition-all
-                  ${!producto.stock ? 'border-zinc-800 text-zinc-700 cursor-not-allowed'
+                  ${!producto.stock || atLimit ? 'border-zinc-800 text-zinc-700 cursor-not-allowed'
                     : talla === t ? 'text-black border-transparent'
                     : 'border-zinc-700 text-zinc-300 hover:border-zinc-400'}`}
-                style={talla === t && producto.stock ? { background: accentHex, borderColor: accentHex } : {}}
+                style={talla === t && producto.stock && !atLimit ? { background: accentHex, borderColor: accentHex } : {}}
               >
                 {t}
               </button>
@@ -145,47 +294,72 @@ function ProductoCard({ producto, accentHex, categoria, onAdd }: {
 
         <button
           onClick={handleAdd}
-          disabled={!producto.stock || !talla || added}
+          disabled={btnDisabled}
           className={`mt-auto flex items-center justify-center gap-2 py-3 font-mono text-xs font-bold tracking-wider transition-all
-            ${added ? 'text-black' : producto.stock && talla ? 'text-black hover:brightness-90 active:scale-95' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}
-          style={added ? { background: accentHex } : producto.stock && talla ? { background: accentHex } : {}}
+            ${btnDisabled ? 'cursor-not-allowed' : 'hover:brightness-90 active:scale-95'}`}
+          style={{
+            background: flash ? accentHex
+              : (producto.stock && talla && !atLimit) ? accentHex
+              : '#27272a',
+            color: (flash || (producto.stock && talla && !atLimit)) ? '#000' : '#71717a',
+          }}
         >
-          {added ? <><CheckCircle2 className="w-3.5 h-3.5" /> AÑADIDO</>
-            : !producto.stock ? <><XCircle className="w-3.5 h-3.5" /> AGOTADO</>
-            : !talla ? <><ShoppingBag className="w-3.5 h-3.5" /> ELIGE TALLA</>
-            : <><ShoppingCart className="w-3.5 h-3.5" /> AGREGAR</>}
+          {btnLabel()}
         </button>
       </div>
     </div>
   );
 }
 
+/* ─── SubCatalogo ─── */
 export default function SubCatalogo() {
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   const rawCat = pathParts[pathParts.length - 1] as CatId;
   const tema = TEMAS[rawCat] ?? TEMAS.deporte;
 
-  const [cartCount, setCartCount] = useState(() => cartStore.count());
-  const [showCartToast, setShowCartToast] = useState(false);
-  const [lastAdded, setLastAdded] = useState('');
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => cartStore.get());
+  const [showCart, setShowCart] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [showToast, setShowToast] = useState(false);
+
+  const refreshCart = useCallback(() => {
+    setCartItems(cartStore.get());
+  }, []);
 
   const handleAdd = (titulo: string) => {
-    setCartCount(cartStore.count());
-    setLastAdded(titulo);
-    setShowCartToast(true);
-    setTimeout(() => setShowCartToast(false), 2800);
+    refreshCart();
+    setToastMsg(titulo);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2200);
   };
+
+  const handleRemove = (id: string, talla: string) => {
+    cartStore.remove(id, talla);
+    refreshCart();
+  };
+
+  const cartCount = cartItems.reduce((s, i) => s + i.cantidad, 0);
 
   return (
     <div className={`min-h-screen ${tema.bgClass} text-white font-sans flex flex-col`}>
 
       {/* TOAST */}
-      <div className={`fixed top-20 right-4 z-50 flex items-center gap-3 px-4 py-3 shadow-2xl transition-all duration-300 max-w-xs
-        ${showCartToast ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0 pointer-events-none'}`}
+      <div className={`fixed top-20 right-4 z-[60] flex items-center gap-3 px-4 py-3 shadow-2xl transition-all duration-300 max-w-xs
+        ${showToast ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0 pointer-events-none'}`}
         style={{ background: tema.accentHex, color: '#000' }}>
         <CheckCircle2 className="w-4 h-4 shrink-0" />
-        <p className="font-mono text-[10px] font-bold truncate">{lastAdded}</p>
+        <p className="font-mono text-[10px] font-bold truncate">{toastMsg} — añadido</p>
       </div>
+
+      {/* CART MODAL */}
+      {showCart && (
+        <CartModal
+          items={cartItems}
+          accentHex={tema.accentHex}
+          onClose={() => setShowCart(false)}
+          onRemove={handleRemove}
+        />
+      )}
 
       {/* HEADER */}
       <header className={`sticky top-0 z-40 backdrop-blur-md border-b ${tema.headerBg} px-6 py-4 flex items-center justify-between`}>
@@ -197,7 +371,7 @@ export default function SubCatalogo() {
           <span className="font-bold tracking-tighter text-lg">VLCN STUDIO</span>
         </div>
         <button
-          onClick={() => navTo('configurador')}
+          onClick={() => setShowCart(true)}
           className="relative flex items-center gap-2 font-mono text-xs transition-colors hover:text-white"
           style={{ color: cartCount > 0 ? tema.accentHex : '#71717a' }}
         >
@@ -228,6 +402,7 @@ export default function SubCatalogo() {
               producto={prod}
               accentHex={tema.accentHex}
               categoria={rawCat}
+              productCartCount={cartItems.filter(i => i.id === prod.id).reduce((s, i) => s + i.cantidad, 0)}
               onAdd={() => handleAdd(prod.titulo)}
             />
           ))}
@@ -236,22 +411,27 @@ export default function SubCatalogo() {
 
       <Footer />
 
-      {/* STICKY SEGUIR BAR — siempre visible */}
+      {/* STICKY BAR */}
       <div className="sticky bottom-0 z-40 border-t border-white/10 px-6 py-4 flex items-center justify-between gap-4"
         style={{ background: 'rgba(9,9,11,0.97)', backdropFilter: 'blur(12px)' }}>
         <div className="flex items-center gap-3">
           <ShoppingCart className="w-5 h-5 shrink-0" style={{ color: cartCount > 0 ? tema.accentHex : '#52525b' }} />
           {cartCount > 0 ? (
-            <p className="font-mono text-sm text-white">
-              <span className="font-bold" style={{ color: tema.accentHex }}>{cartCount}</span> {cartCount === 1 ? 'producto' : 'productos'} seleccionado{cartCount > 1 ? 's' : ''}
-            </p>
+            <button
+              onClick={() => setShowCart(true)}
+              className="font-mono text-sm hover:underline transition-all text-left"
+            >
+              <span className="font-bold" style={{ color: tema.accentHex }}>{cartCount}</span>
+              <span className="text-white"> {cartCount === 1 ? 'prenda' : 'prendas'} · ver resumen</span>
+            </button>
           ) : (
             <p className="font-mono text-xs text-zinc-500">Elige una talla y agrega al carrito para continuar</p>
           )}
         </div>
         <button
-          onClick={() => navTo('configurador')}
-          className="flex items-center gap-2 px-6 py-3 font-mono text-sm font-bold tracking-wide shrink-0 transition-all hover:brightness-110 hover:scale-105 active:scale-95"
+          onClick={() => cartCount > 0 ? setShowCart(true) : undefined}
+          disabled={cartCount === 0}
+          className="flex items-center gap-2 px-6 py-3 font-mono text-sm font-bold tracking-wide shrink-0 transition-all hover:brightness-110 hover:scale-105 active:scale-95 disabled:cursor-not-allowed"
           style={cartCount > 0 ? { background: tema.accentHex, color: '#000' } : { background: '#27272a', color: '#71717a' }}
         >
           SEGUIR <ArrowRight className="w-4 h-4" />
