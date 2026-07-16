@@ -95,7 +95,18 @@ async function colorize(hex: string): Promise<string> {
       const tr = parseInt(hex.slice(1,3),16)/255;
       const tg = parseInt(hex.slice(3,5),16)/255;
       const tb = parseInt(hex.slice(5,7),16)/255;
-      const [tH, tS] = rgbToHsl(tr, tg, tb);
+      const [tH, tS, tL] = rgbToHsl(tr, tg, tb);
+
+      // Lightness band for this color: shadows → highlights on the fabric
+      // shadL: darkest shadow point (30% of target L)
+      // hlL:   brightest highlight (target L + 0.35, max 1.0)
+      // This makes black stay dark-with-sheen, red stay vivid-red, etc.
+      const shadL = tL * 0.30;
+      const hlL   = Math.min(1.0, tL + 0.35);
+
+      // Fabric threshold: pixels below this L are the dark stone background → skip
+      // Raised to 0.40 to reliably exclude the gray textured surface
+      const FABRIC_MIN = 0.40;
 
       const id = ctx.getImageData(0, 0, cvs.width, cvs.height);
       const px = id.data;
@@ -107,16 +118,23 @@ async function colorize(hex: string): Promise<string> {
         const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
         const pixSat = mx === 0 ? 0 : (mx - mn) / mx;
 
-        // Only recolor near-achromatic (fabric) pixels — skip any coloured detail
+        // Only recolor near-achromatic (fabric) pixels — skip coloured design details
         if (pixSat < 0.32) {
           const [,, L] = rgbToHsl(r, g, b);
-          // Skip dark background — only colorize shirt fabric (light areas)
-          if (L < 0.22) continue;
-          // Keep full saturation across the shirt body;
-          // only taper to white at the very brightest highlights (L > 0.88)
-          const highlightFade = L > 0.88 ? Math.max(0, (1 - L) / 0.12) : 1.0;
-          const effectiveSat = tS * highlightFade;
-          const [nr, ng2, nb2] = hslToRgb(tH, effectiveSat, L);
+          // Exclude dark background pixels (stone texture stays untouched)
+          if (L < FABRIC_MIN) continue;
+
+          // Normalise this pixel's brightness within the shirt's light range [FABRIC_MIN..1]
+          const norm = (L - FABRIC_MIN) / (1.0 - FABRIC_MIN); // 0 = shadow edge, 1 = pure white
+
+          // Map normalised brightness → target color's lightness band
+          // Preserves folds/shadows/highlights for any color including black
+          const newL = shadL + (hlL - shadL) * norm;
+
+          // Taper saturation only at extreme highlights so they stay white-ish (natural sheen)
+          const sat = norm > 0.92 ? tS * Math.max(0, (1 - norm) / 0.08) : tS;
+
+          const [nr, ng2, nb2] = hslToRgb(tH, sat, newL);
           px[i] = nr; px[i+1] = ng2; px[i+2] = nb2;
         }
       }
