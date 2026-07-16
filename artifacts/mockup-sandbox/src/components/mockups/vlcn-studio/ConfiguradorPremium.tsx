@@ -76,13 +76,22 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   ];
 }
 
-// src can be the local shirt template or an external Cloudinary URL
-async function colorize(hex: string, src: string): Promise<string> {
-  const cacheKey = `${src}::${hex}`;
+/**
+ * Colorize a shirt image.
+ *
+ * strict=false → flat-lay template (no model, no design): liberal thresholds, good coverage.
+ * strict=true  → catalog photos (model + design printed):
+ *   • Only touches near-pure-white pixels (L ≥ 0.58, HSV-sat < 0.13)
+ *   • Skips warm-toned pixels (r−b > 0.17) to protect skin & warm backgrounds
+ *   • Skips dark areas (background, hair, shadows) untouched
+ *   • Colored design elements (high HSV-sat) are untouched by definition
+ */
+async function colorize(hex: string, src: string, strict = false): Promise<string> {
+  const cacheKey = `${src}::${hex}::${strict ? 1 : 0}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey)!;
   return new Promise(resolve => {
     const img = new window.Image();
-    img.crossOrigin = 'anonymous'; // needed for Cloudinary + canvas read
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       const cvs = document.createElement('canvas');
       cvs.width = img.naturalWidth; cvs.height = img.naturalHeight;
@@ -90,7 +99,7 @@ async function colorize(hex: string, src: string): Promise<string> {
       if (!ctx) { resolve(src); return; }
       ctx.drawImage(img, 0, 0);
 
-      // White → return original (no tinting)
+      // White → return original (no tinting needed)
       if (hex === '#FFFFFF') {
         const u = cvs.toDataURL('image/png'); cache.set(cacheKey, u); resolve(u); return;
       }
@@ -101,11 +110,16 @@ async function colorize(hex: string, src: string): Promise<string> {
       const tb = parseInt(hex.slice(5,7),16)/255;
       const [tH, tS, tL] = rgbToHsl(tr, tg, tb);
 
-      // Lightness band: shadows → highlights on the fabric
-      const shadL = tL * 0.30;
-      const hlL   = Math.min(1.0, tL + 0.35);
-      // Pixels below FABRIC_MIN are background/shadow → skip (stays original)
-      const FABRIC_MIN = 0.40;
+      // Lightness band for the target color
+      // shadL = darkest shadow, hlL = brightest highlight
+      const shadL = tL * 0.28;
+      const hlL   = Math.min(1.0, tL + 0.38);
+
+      // Thresholds differ between modes:
+      // strict   → only the brightest near-white fabric; avoids model/skin/design
+      // lenient  → broader coverage on the flat-lay shirt template
+      const SAT_LIMIT  = strict ? 0.13 : 0.26;   // HSV saturation ceiling
+      const FABRIC_MIN = strict ? 0.58 : 0.40;   // minimum luminosity to qualify
 
       const id = ctx.getImageData(0, 0, cvs.width, cvs.height);
       const px = id.data;
@@ -115,20 +129,26 @@ async function colorize(hex: string, src: string): Promise<string> {
 
         const r = px[i]/255, g = px[i+1]/255, b = px[i+2]/255;
         const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
-        const pixSat = mx === 0 ? 0 : (mx - mn) / mx;
+        const pixSat = mx === 0 ? 0 : (mx - mn) / mx; // HSV saturation
 
-        // Only recolor near-achromatic (fabric) pixels — design colours stay untouched
-        if (pixSat < 0.32) {
-          const [,, L] = rgbToHsl(r, g, b);
-          if (L < FABRIC_MIN) continue; // background / deep shadow → untouched
+        if (pixSat >= SAT_LIMIT) continue; // colored pixel → design or skin with hue → skip
 
-          const norm = (L - FABRIC_MIN) / (1.0 - FABRIC_MIN);
-          const newL = shadL + (hlL - shadL) * norm;
-          const sat  = norm > 0.92 ? tS * Math.max(0, (1 - norm) / 0.08) : tS;
+        const [,, L] = rgbToHsl(r, g, b);
+        if (L < FABRIC_MIN) continue;                  // dark background / shadow → skip
 
-          const [nr, ng2, nb2] = hslToRgb(tH, sat, newL);
-          px[i] = nr; px[i+1] = ng2; px[i+2] = nb2;
-        }
+        // Strict mode: skip warm-toned pixels (skin protection)
+        // Skin has r > b noticeably; neutral white fabric is balanced
+        if (strict && (r - b) > 0.17) continue;
+
+        // Map brightness within fabric range → target color's lightness band
+        const norm = (L - FABRIC_MIN) / (1.0 - FABRIC_MIN); // 0…1
+        const newL = shadL + (hlL - shadL) * norm;
+
+        // Taper saturation at very bright highlights (natural fabric sheen)
+        const sat = norm > 0.90 ? tS * Math.max(0, (1 - norm) / 0.10) : tS;
+
+        const [nr, ng2, nb2] = hslToRgb(tH, sat, newL);
+        px[i] = nr; px[i+1] = ng2; px[i+2] = nb2;
       }
 
       ctx.putImageData(id, 0, 0);
@@ -156,17 +176,20 @@ export default function ConfiguradorPremium() {
   const activeSrc = catalogItem?.imagen ?? SHIRT_SRC;
 
   // preload all colorized versions for the active source
+  // catalog photos use strict mode (protects model/skin/design)
+  const isCatalog = !!catalogItem;
   useEffect(() => {
     let alive = true;
-    setUrls({}); // clear stale cache when source changes
+    setUrls({});
     (async () => {
       for (const c of COLORS) {
-        const u = await colorize(c.hex, activeSrc);
+        const u = await colorize(c.hex, activeSrc, isCatalog);
         if (alive) setUrls(p => ({ ...p, [c.hex]: u }));
       }
     })();
     return () => { alive = false; };
-  }, [activeSrc]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSrc, isCatalog]);
 
   const togglePlacement = (id: string) =>
     setPlacements(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
