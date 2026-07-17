@@ -25,7 +25,7 @@ interface Producto {
 
 const CATALOGO_DEPORTE: Producto[] = [
   { id: 'd1', titulo: 'Erling Haaland',             precio: 15000, stock: true,  stockQty: 8,  placeholderBg: '#052e16', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784322653/HAALAND_ERLING_dzzohp.png', tag: 'NUEVO' },
-  { id: 'd2', titulo: 'Lionel Messi — La Pulga',   precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#0c1a3a', placeholderEmoji: '⚽', tag: 'TOP' },
+  { id: 'd2', titulo: 'Neymar Jr.',   precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#0c1a3a', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784327382/ChatGPT_Image_17_jul_2026_06_29_13_p.m_hgh4mo.png', tag: 'TOP' },
   { id: 'd3', titulo: 'Cristiano Ronaldo — CR7',   precio: 15000, stock: true,  stockQty: 3,  placeholderBg: '#1a0a00', placeholderEmoji: '🔥' },
   { id: 'd4', titulo: 'Michael Jordan — Bulls 23', precio: 15000, stock: true,  stockQty: 6,  placeholderBg: '#1a0000', placeholderEmoji: '🏀', tag: 'TOP' },
   { id: 'd5', titulo: 'Neymar Jr — NJR',           precio: 15000, stock: false,              placeholderBg: '#0f1f0f', placeholderEmoji: '⚡' },
