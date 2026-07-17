@@ -239,7 +239,7 @@ function ProductoCard({ producto, accentHex, categoria, productCartCount, onAdd 
       {/* IMAGEN */}
       <div className="relative aspect-square flex items-center justify-center overflow-hidden" style={{ background: producto.placeholderBg ?? '#18181b' }}>
         {producto.imagen ? (
-          <img src={producto.imagen} alt={producto.titulo} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <img src={producto.imagen} alt={producto.titulo} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 scale-90" />
         ) : (
           <span className="text-7xl leading-none opacity-50 select-none">{producto.placeholderEmoji ?? '🖼️'}</span>
         )}
