@@ -24,7 +24,7 @@ interface Producto {
 }
 
 const CATALOGO_DEPORTE: Producto[] = [
-  { id: 'd1', titulo: 'Copa del Mundo Qatar 2022', precio: 15000, stock: true,  stockQty: 8,  placeholderBg: '#052e16', placeholderEmoji: '🏆', tag: 'NUEVO' },
+  { id: 'd1', titulo: 'Erling Haaland',             precio: 15000, stock: true,  stockQty: 8,  placeholderBg: '#052e16', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784322653/HAALAND_ERLING_dzzohp.png', tag: 'NUEVO' },
   { id: 'd2', titulo: 'Lionel Messi — La Pulga',   precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#0c1a3a', placeholderEmoji: '⚽', tag: 'TOP' },
   { id: 'd3', titulo: 'Cristiano Ronaldo — CR7',   precio: 15000, stock: true,  stockQty: 3,  placeholderBg: '#1a0a00', placeholderEmoji: '🔥' },
   { id: 'd4', titulo: 'Michael Jordan — Bulls 23', precio: 15000, stock: true,  stockQty: 6,  placeholderBg: '#1a0000', placeholderEmoji: '🏀', tag: 'TOP' },
