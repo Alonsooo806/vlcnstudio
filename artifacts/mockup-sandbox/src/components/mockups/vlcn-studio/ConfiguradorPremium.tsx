@@ -309,19 +309,19 @@ export default function ConfiguradorPremium() {
       {/* MAIN */}
       <main className="flex-1 flex flex-col lg:flex-row">
 
-        {/* ── LEFT: SHIRT VIEWER ── */}
-        <div className="lg:sticky lg:top-[61px] lg:self-start lg:w-[45%] lg:h-[calc(100vh-61px)] flex flex-col items-center justify-center p-8 gap-6 min-h-[300px] bg-zinc-900">
+        {/* ── LEFT: SHIRT VIEWER — always white background ── */}
+        <div className="lg:sticky lg:top-[61px] lg:self-start lg:w-[45%] lg:h-[calc(100vh-61px)] flex flex-col items-center justify-center p-8 gap-6 min-h-[300px] bg-white">
 
           {catalogItem ? (
-            /* ── CATALOG MODE: full product photo with color tinting ── */
+            /* ── CATALOG MODE: product photo with pixel recolorization ── */
             <>
               {/* Product name badge */}
-              <p className="font-mono text-[10px] tracking-widest text-zinc-400 uppercase self-start">
+              <p className="font-mono text-[10px] tracking-widest text-zinc-500 uppercase self-start">
                 {catalogItem.titulo}
               </p>
 
               {/* Photo preview */}
-              <div className="relative w-full max-w-[360px] aspect-square rounded overflow-hidden">
+              <div className="relative w-full max-w-[360px] aspect-square rounded overflow-hidden shadow-lg">
                 <img
                   key={currentColor.hex}
                   src={shirtUrl}
@@ -331,7 +331,7 @@ export default function ConfiguradorPremium() {
                 />
                 {/* loading shimmer while colorize runs */}
                 {!urls[currentColor.hex] && (
-                  <div className="absolute inset-0 bg-zinc-800 animate-pulse" />
+                  <div className="absolute inset-0 bg-zinc-200 animate-pulse" />
                 )}
               </div>
 
@@ -342,8 +342,8 @@ export default function ConfiguradorPremium() {
                     key={c.id}
                     onClick={() => setColor(c.id)}
                     title={c.name}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-white' : 'border-zinc-600 hover:scale-110'}`}
-                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-zinc-900' : 'border-zinc-300 hover:scale-110'}`}
+                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.18)' }}
                   />
                 ))}
               </div>
@@ -351,21 +351,21 @@ export default function ConfiguradorPremium() {
               {/* ELIGE OTRO: clears selection → standard custom mode */}
               <button
                 onClick={() => { catalogStore.clear(); setCatalogItem(null); setColor('blanco'); }}
-                className="font-mono text-[11px] text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-400 px-4 py-2 transition-colors tracking-wider"
+                className="font-mono text-[11px] text-zinc-500 hover:text-zinc-900 border border-zinc-300 hover:border-zinc-600 px-4 py-2 transition-colors tracking-wider"
               >
                 ← ELIGE OTRO DISEÑO
               </button>
             </>
           ) : (
-            /* ── STANDARD MODE: pre-rendered shirt PNG + custom upload ── */
+            /* ── STANDARD MODE: pre-rendered studio PNG — instant swap, zero artifacts ── */
             <>
-              {/* Shirt image — swaps instantly, no canvas processing */}
+              {/* Shirt image */}
               <div className="relative w-full max-w-[360px] aspect-square flex items-center justify-center">
                 <img
                   key={currentColor.id}
                   src={shirtUrl}
                   alt={`Camiseta ${currentColor.name}`}
-                  className="w-full h-full object-contain select-none transition-opacity duration-200"
+                  className="w-full h-full object-contain select-none transition-opacity duration-200 drop-shadow-xl"
                   draggable={false}
                 />
                 {/* design overlay */}
@@ -383,8 +383,8 @@ export default function ConfiguradorPremium() {
                     key={c.id}
                     onClick={() => setColor(c.id)}
                     title={c.name}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-white' : 'border-zinc-600 hover:scale-110'}`}
-                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-zinc-900' : 'border-zinc-300 hover:scale-110'}`}
+                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.18)' }}
                   />
                 ))}
               </div>
@@ -392,13 +392,13 @@ export default function ConfiguradorPremium() {
               {/* Upload design */}
               <button
                 onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-2 border border-zinc-600 bg-zinc-800 text-white px-5 py-2.5 font-mono text-xs font-bold tracking-wider hover:border-zinc-400 hover:bg-zinc-700 transition-colors"
+                className="flex items-center gap-2 border border-zinc-300 bg-white text-zinc-800 px-5 py-2.5 font-mono text-xs font-bold tracking-wider hover:border-zinc-600 transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" />
                 {design ? 'CAMBIAR DISEÑO' : 'SUBIR MI DISEÑO'}
               </button>
               {design && (
-                <button onClick={() => setDesign(null)} className="font-mono text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors -mt-3">
+                <button onClick={() => setDesign(null)} className="font-mono text-[10px] text-zinc-400 hover:text-zinc-700 transition-colors -mt-3">
                   quitar diseño
                 </button>
               )}
