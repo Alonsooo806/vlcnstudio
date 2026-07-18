@@ -1,6 +1,8 @@
 import { useEffect, useState, type ComponentType } from "react";
 
 import { modules as discoveredModules } from "./.generated/mockup-components";
+import { EditProvider } from "./components/mockups/vlcn-studio/editContext";
+import EditToolbar from "./components/mockups/vlcn-studio/EditToolbar";
 import Inicio from "./components/mockups/vlcn-studio/Inicio";
 import ConfiguradorPremium from "./components/mockups/vlcn-studio/ConfiguradorPremium";
 import Categorias from "./components/mockups/vlcn-studio/Categorias";
@@ -169,16 +171,24 @@ function App() {
   }
 
   const siteRoute = getSiteRoute();
-  if (siteRoute === "home") return <><Inicio /><WhatsAppButton /></>;
-  if (siteRoute === "configurador") return <><ConfiguradorPremium /><WhatsAppButton /></>;
-  if (siteRoute === "categorias") return <><Categorias /><WhatsAppButton /></>;
-  if (siteRoute === "subcatalogo") return <><SubCatalogo /><WhatsAppButton /></>;
-  if (siteRoute === "terminos") return <TerminosCondiciones />;
-  if (siteRoute === "cuidado") return <CuidadoProducto />;
-  if (siteRoute === "faq") return <PreguntasRespuestas />;
-  if (siteRoute === "quienes") return <QuienesSomos />;
+  let routeKey = "home";
+  let page: React.ReactNode = <><Inicio /><WhatsAppButton /></>;
+  if (siteRoute === "home") { routeKey = "home"; page = <><Inicio /><WhatsAppButton /></>; }
+  else if (siteRoute === "configurador") { routeKey = "configurador"; page = <><ConfiguradorPremium /><WhatsAppButton /></>; }
+  else if (siteRoute === "categorias") { routeKey = "categorias"; page = <><Categorias /><WhatsAppButton /></>; }
+  else if (siteRoute === "subcatalogo") { routeKey = "subcatalogo"; page = <><SubCatalogo /><WhatsAppButton /></>; }
+  else if (siteRoute === "terminos") { routeKey = "terminos"; page = <TerminosCondiciones />; }
+  else if (siteRoute === "cuidado") { routeKey = "cuidado"; page = <CuidadoProducto />; }
+  else if (siteRoute === "faq") { routeKey = "faq"; page = <PreguntasRespuestas />; }
+  else if (siteRoute === "quienes") { routeKey = "quienes"; page = <QuienesSomos />; }
+  else return <Gallery />;
 
-  return <Gallery />;
+  return (
+    <EditProvider route={routeKey}>
+      {page}
+      <EditToolbar />
+    </EditProvider>
+  );
 }
 
 export default App;
