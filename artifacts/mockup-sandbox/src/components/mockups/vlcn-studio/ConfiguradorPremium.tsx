@@ -125,21 +125,32 @@ async function colorize(hex: string, src: string, strict = false): Promise<strin
       const tb = parseInt(hex.slice(5,7),16)/255;
       const [tH, tS, tL] = rgbToHsl(tr, tg, tb);
 
-      // Physical shading band of the target color:
-      //   shadL = luminosity of the deepest shadow on a shirt of this color
-      //   hlL   = luminosity of the brightest diffuse highlight
-      // For dark colors (black) this still produces a narrow but visible fold range.
-      const shadL = Math.max(0.03, tL * 0.26);
-      const hlL   = Math.min(0.97, tL + (1.0 - tL) * 0.80);
+      // ── Physical shading band ──────────────────────────────────────
+      //
+      // shadL = darkest shadow luminosity on a shirt of this color.
+      //         Uses a small additive floor (0.02) so even pure black fabric
+      //         keeps just enough light to reveal fold structure.
+      //
+      // hlL   = brightest diffuse highlight luminosity.
+      //         Formula: tL * 1.40 + 0.08  (scaled + ambient floor)
+      //         This ensures:
+      //           black  (tL≈0.00) → hlL ≈ 0.08  (very dark gray highlight ✓)
+      //           red    (tL≈0.45) → hlL ≈ 0.71  (vivid bright red         ✓)
+      //           white  (tL≈0.95) → hlL ≈ 0.95  (near-white highlight     ✓)
+      //         Previous formula (tL + 0.80*(1−tL)) gave hlL=0.80 for black,
+      //         making black shirts look washed-out gray — now fixed.
+      const shadL = Math.max(0.015, tL * 0.16);
+      const hlL   = Math.min(0.96,  tL * 1.40 + 0.08);
 
       // ── Detection thresholds ────────────────────────────────────────
-      // SAT_FULL: HSV saturation below which the pixel is treated as 100% fabric.
-      // SAT_NONE: above this → definitely skip (design ink, skin, background hue).
-      // Between SAT_FULL and SAT_NONE → smooth linear blend for anti-aliased edges.
-      // LUMA_MIN: luminosity floor; pixels below this are background/deep shadow.
+      // SAT_FULL: HSV saturation below this → pixel is 100% fabric (full tint).
+      // SAT_NONE: above this → skip (design ink, skin, colored background).
+      // Between SAT_FULL and SAT_NONE → smooth linear blend (anti-aliased edge).
+      // LUMA_MIN: luminosity floor for fabric pixels; lowered vs. before to
+      //           capture the darkest fold shadows that were previously skipped.
       const SAT_FULL  = strict ? 0.07 : 0.13;
       const SAT_NONE  = strict ? 0.17 : 0.32;
-      const LUMA_MIN  = strict ? 0.50 : 0.34;
+      const LUMA_MIN  = strict ? 0.44 : 0.30;  // lowered to catch deep shadow folds
 
       const id = ctx.getImageData(0, 0, cvs.width, cvs.height);
       const px = id.data;
@@ -149,7 +160,7 @@ async function colorize(hex: string, src: string, strict = false): Promise<strin
 
         const r = px[i]/255, g = px[i+1]/255, b = px[i+2]/255;
         const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
-        // HSV saturation — best discriminator between white fabric and colored design
+        // HSV saturation: best discriminator between white fabric and colored design
         const hsvSat = mx === 0 ? 0 : (mx - mn) / mx;
 
         // Hard reject: saturated design ink / background hue
@@ -157,46 +168,46 @@ async function colorize(hex: string, src: string, strict = false): Promise<strin
 
         const [,, L] = rgbToHsl(r, g, b);
 
-        // Hard reject: dark background, hair, deep shadow outside fabric range
+        // Hard reject: background, hair, deep shadow outside the fabric range
         if (L < LUMA_MIN) continue;
 
-        // Strict mode: reject warm-toned pixels (skin has r >> b)
+        // Strict mode: reject warm-toned pixels (skin: r >> b)
         if (strict && (r - b) > 0.15) continue;
 
         // ── Fabric confidence: smooth blend near the saturation edge ──
-        // confidence = 1 → fully tinted; 0 → fully original
+        // confidence=1 → fully tinted; confidence=0 → fully original
         const confidence = hsvSat <= SAT_FULL
           ? 1.0
           : 1.0 - (hsvSat - SAT_FULL) / (SAT_NONE - SAT_FULL);
 
-        // ── Normalized position within the fabric luminosity range ─────
+        // ── Normalized position in the fabric luminosity range ─────────
         // raw_t = 0 at the darkest qualifying shadow, 1 at pure white highlight.
-        // gamma < 1 brightens the midtone curve → more contrast in fold structure.
+        // Gamma > 1 pushes midtones toward the shadow end → deeper, more dramatic
+        // folds and shadows across the whole garment (user-requested improvement).
         const raw_t = (L - LUMA_MIN) / (1.0 - LUMA_MIN);
-        const t = Math.pow(raw_t, 0.78);
+        const t = Math.pow(raw_t, 1.20);  // >1 = emphasise shadow depth
 
         // ── Physical luminosity mapping ────────────────────────────────
         const newL = shadL + (hlL - shadL) * t;
 
         // ── Saturation shaping (cotton diffuse model) ──────────────────
-        // Main body: full saturation.
-        // t > 0.85: bright highlight zone — smooth quadratic fade.
-        //   Real cotton fabric shows a slight specular desaturation at the
-        //   brightest point, preventing the highlight from looking over-saturated.
-        // t < 0.10: deep shadow zone — slight reduction.
-        //   Deep folds absorb more light and lose some perceived chroma.
+        // Full saturation across the main body.
+        // Highlight zone (t > 0.82): smooth quadratic fade — cotton shows a
+        //   subtle specular desaturation at the very brightest point.
+        // Deep shadow zone (t < 0.08): slight reduction — dark folds absorb
+        //   more diffuse light and lose perceived chroma.
         let newS = tS;
-        if (t > 0.85) {
-          const p = (t - 0.85) / 0.15;          // 0 → 1 through the highlight zone
-          newS = tS * (1.0 - p * p * 0.50);     // quadratic fade, max –50% at peak
-        } else if (t < 0.10) {
-          newS = tS * (0.55 + t * 4.5);         // linear recovery from 55% at t=0
+        if (t > 0.82) {
+          const p = (t - 0.82) / 0.18;
+          newS = tS * (1.0 - p * p * 0.45);
+        } else if (t < 0.08) {
+          newS = tS * (0.50 + t * 6.25);
         }
 
         // ── Compose ───────────────────────────────────────────────────
         const [nr, ng2, nb2] = hslToRgb(tH, newS, newL);
 
-        // Confidence blend: full tint when confidence=1, original when confidence=0
+        // Confidence blend: full tint at confidence=1, original at confidence=0
         px[i]   = Math.round(px[i]   * (1 - confidence) + nr  * confidence);
         px[i+1] = Math.round(px[i+1] * (1 - confidence) + ng2 * confidence);
         px[i+2] = Math.round(px[i+2] * (1 - confidence) + nb2 * confidence);
