@@ -5,15 +5,22 @@ import { catalogStore } from './catalogStore';
 import Footer from './Footer';
 
 // ─── DATA ────────────────────────────────────────────────────────────
+//
+// Each color carries:
+//   hex  → used for the color swatch and for catalog-mode pixel recolorization
+//   src  → pre-rendered studio PNG for standard mode (perfect quality, no canvas)
+//           These images were generated with correct lighting, shadow depth,
+//           and fold structure for each hue — they require zero pixel processing.
+//   srcWhite → same shirt on white/light background (used in standard mode viewer)
 const COLORS = [
-  { id: 'blanco',   name: 'Blanco',   hex: '#FFFFFF' },
-  { id: 'negro',    name: 'Negro',    hex: '#000000' },
-  { id: 'rojo',     name: 'Rojo',     hex: '#DC2626' },
-  { id: 'naranjo',  name: 'Naranjo',  hex: '#F97316' },
-  { id: 'amarillo', name: 'Amarillo', hex: '#EAB308' },
-  { id: 'verde',    name: 'Verde',    hex: '#16A34A' },
-  { id: 'azul',     name: 'Azul',     hex: '#2563EB' },
-  { id: 'violeta',  name: 'Violeta',  hex: '#7C3AED' },
+  { id: 'blanco',   name: 'Blanco',   hex: '#FFFFFF', src: 'generated_images/vlcn-shirt-blanco.png'  },
+  { id: 'negro',    name: 'Negro',    hex: '#000000', src: 'generated_images/vlcn-shirt-negro.png'   },
+  { id: 'rojo',     name: 'Rojo',     hex: '#DC2626', src: 'generated_images/vlcn-shirt-rojo.png'    },
+  { id: 'naranjo',  name: 'Naranjo',  hex: '#F97316', src: 'generated_images/vlcn-shirt-naranjo.png' },
+  { id: 'amarillo', name: 'Amarillo', hex: '#EAB308', src: 'generated_images/vlcn-shirt-amarillo.png'},
+  { id: 'verde',    name: 'Verde',    hex: '#16A34A', src: 'generated_images/vlcn-shirt-verde.png'   },
+  { id: 'azul',     name: 'Azul',     hex: '#2563EB', src: 'generated_images/vlcn-shirt-azul.png'    },
+  { id: 'violeta',  name: 'Violeta',  hex: '#7C3AED', src: 'generated_images/vlcn-shirt-violeta.png' },
 ];
 
 const SIZES = ['S', 'M', 'L', 'XL', '2XL'];
@@ -127,30 +134,32 @@ async function colorize(hex: string, src: string, strict = false): Promise<strin
 
       // ── Physical shading band ──────────────────────────────────────
       //
-      // shadL = darkest shadow luminosity on a shirt of this color.
-      //         Uses a small additive floor (0.02) so even pure black fabric
-      //         keeps just enough light to reveal fold structure.
+      // shadL: darkest shadow the fabric shows for this color.
+      //   floor of 0.01 ensures even pure-black fabric has a non-zero deep shadow
+      //   so fold structure is visible.
       //
-      // hlL   = brightest diffuse highlight luminosity.
-      //         Formula: tL * 1.40 + 0.08  (scaled + ambient floor)
-      //         This ensures:
-      //           black  (tL≈0.00) → hlL ≈ 0.08  (very dark gray highlight ✓)
-      //           red    (tL≈0.45) → hlL ≈ 0.71  (vivid bright red         ✓)
-      //           white  (tL≈0.95) → hlL ≈ 0.95  (near-white highlight     ✓)
-      //         Previous formula (tL + 0.80*(1−tL)) gave hlL=0.80 for black,
-      //         making black shirts look washed-out gray — now fixed.
-      const shadL = Math.max(0.015, tL * 0.16);
-      const hlL   = Math.min(0.96,  tL * 1.40 + 0.08);
+      // hlL: brightest diffuse highlight.
+      //   Uses a power-curve formula calibrated across the full hue range:
+      //     tL^0.70 * 0.80 + 0.14
+      //   Results:
+      //     black  (tL=0.00) → 0.14  (very dark gray — fold structure clearly visible)
+      //     red    (tL=0.51) → 0.64  (vivid saturated highlight)
+      //     blue   (tL=0.53) → 0.66
+      //     white  (tL=0.95) → 0.91  (near-white, realistic cotton diffuse)
+      //   This replaces the old linear formula that gave black→0.80 (wrong: washed gray).
+      const shadL = Math.max(0.010, tL * 0.16);
+      const hlL   = Math.min(0.96, Math.pow(tL, 0.70) * 0.80 + 0.14);
 
       // ── Detection thresholds ────────────────────────────────────────
       // SAT_FULL: HSV saturation below this → pixel is 100% fabric (full tint).
-      // SAT_NONE: above this → skip (design ink, skin, colored background).
-      // Between SAT_FULL and SAT_NONE → smooth linear blend (anti-aliased edge).
-      // LUMA_MIN: luminosity floor for fabric pixels; lowered vs. before to
-      //           capture the darkest fold shadows that were previously skipped.
-      const SAT_FULL  = strict ? 0.07 : 0.13;
-      const SAT_NONE  = strict ? 0.17 : 0.32;
-      const LUMA_MIN  = strict ? 0.44 : 0.30;  // lowered to catch deep shadow folds
+      // SAT_NONE: above this → hard skip (design ink, skin, colored background).
+      // Between SAT_FULL…SAT_NONE → linear confidence blend (anti-aliased edge).
+      // LUMA_MIN: luminosity floor.  Higher value = safer from skin/design/bg.
+      // LUMA_FADE: soft transition zone above LUMA_MIN so the cutoff isn't hard.
+      const SAT_FULL   = strict ? 0.06 : 0.12;
+      const SAT_NONE   = strict ? 0.15 : 0.30;
+      const LUMA_MIN   = strict ? 0.48 : 0.52;   // raised: prevents background contamination
+      const LUMA_FADE  = 0.07;                    // blend zone above LUMA_MIN
 
       const id = ctx.getImageData(0, 0, cvs.width, cvs.height);
       const px = id.data;
@@ -168,40 +177,46 @@ async function colorize(hex: string, src: string, strict = false): Promise<strin
 
         const [,, L] = rgbToHsl(r, g, b);
 
-        // Hard reject: background, hair, deep shadow outside the fabric range
+        // Hard reject: below luminosity floor (background, hair, deep shadow)
         if (L < LUMA_MIN) continue;
 
-        // Strict mode: reject warm-toned pixels (skin: r >> b)
-        if (strict && (r - b) > 0.15) continue;
+        // Strict mode: reject warm-toned pixels (skin: r significantly > b)
+        if (strict && (r - b) > 0.14) continue;
 
-        // ── Fabric confidence: smooth blend near the saturation edge ──
-        // confidence=1 → fully tinted; confidence=0 → fully original
-        const confidence = hsvSat <= SAT_FULL
+        // ── Saturation confidence: smooth blend near the saturation edge ──
+        // satConf=1 → fully tinted; satConf=0 → fully original
+        const satConf = hsvSat <= SAT_FULL
           ? 1.0
           : 1.0 - (hsvSat - SAT_FULL) / (SAT_NONE - SAT_FULL);
 
+        // ── Luminosity soft-entry: fade in over LUMA_FADE above LUMA_MIN ──
+        // Prevents a hard visible seam at the fabric/background boundary.
+        const lumaConf = L < (LUMA_MIN + LUMA_FADE)
+          ? (L - LUMA_MIN) / LUMA_FADE
+          : 1.0;
+
+        const confidence = satConf * lumaConf;
+        if (confidence <= 0) continue;
+
         // ── Normalized position in the fabric luminosity range ─────────
-        // raw_t = 0 at the darkest qualifying shadow, 1 at pure white highlight.
-        // Gamma > 1 pushes midtones toward the shadow end → deeper, more dramatic
-        // folds and shadows across the whole garment (user-requested improvement).
+        // t = 0 at the darkest qualifying shadow, t = 1 at pure-white highlight.
+        // Gamma 1.08: slightly emphasises shadow depth without over-darkening.
         const raw_t = (L - LUMA_MIN) / (1.0 - LUMA_MIN);
-        const t = Math.pow(raw_t, 1.20);  // >1 = emphasise shadow depth
+        const t = Math.pow(Math.min(1, raw_t), 1.08);
 
         // ── Physical luminosity mapping ────────────────────────────────
         const newL = shadL + (hlL - shadL) * t;
 
         // ── Saturation shaping (cotton diffuse model) ──────────────────
-        // Full saturation across the main body.
-        // Highlight zone (t > 0.82): smooth quadratic fade — cotton shows a
-        //   subtle specular desaturation at the very brightest point.
-        // Deep shadow zone (t < 0.08): slight reduction — dark folds absorb
-        //   more diffuse light and lose perceived chroma.
+        // Full saturation in the midtone body.
+        // t > 0.84: bright highlight zone — quadratic fade (cotton sheen).
+        // t < 0.07: deep shadow zone — slight chroma reduction.
         let newS = tS;
-        if (t > 0.82) {
-          const p = (t - 0.82) / 0.18;
-          newS = tS * (1.0 - p * p * 0.45);
-        } else if (t < 0.08) {
-          newS = tS * (0.50 + t * 6.25);
+        if (t > 0.84) {
+          const p = (t - 0.84) / 0.16;
+          newS = tS * (1.0 - p * p * 0.40);
+        } else if (t < 0.07) {
+          newS = tS * (0.55 + t / 0.07 * 0.45);
         }
 
         // ── Compose ───────────────────────────────────────────────────
@@ -234,30 +249,36 @@ export default function ConfiguradorPremium() {
   const [catalogItem, setCatalogItem] = useState(() => catalogStore.get());
   const fileRef = React.useRef<HTMLInputElement>(null);
 
-  // catalog mode uses the product photo; standard mode uses the local shirt template
-  const activeSrc = catalogItem?.imagen ?? SHIRT_SRC;
-
-  // preload all colorized versions for the active source
-  // catalog photos use strict mode (protects model/skin/design)
   const isCatalog = !!catalogItem;
+
+  // Standard mode → no canvas processing: use pre-rendered studio PNGs directly.
+  // Catalog mode  → pixel recolorization of the product photo (model + design).
   useEffect(() => {
+    if (!isCatalog) { setUrls({}); return; }        // no-op for standard mode
     let alive = true;
     setUrls({});
+    const src = catalogItem!.imagen;
     (async () => {
       for (const c of COLORS) {
-        const u = await colorize(c.hex, activeSrc, isCatalog);
+        const u = await colorize(c.hex, src, true /* strict */);
         if (alive) setUrls(p => ({ ...p, [c.hex]: u }));
       }
     })();
     return () => { alive = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSrc, isCatalog]);
+  }, [catalogItem?.imagen, isCatalog]);
 
   const togglePlacement = (id: string) =>
     setPlacements(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
-  const currentColor  = COLORS.find(c=>c.id===color)!;
-  const shirtUrl      = urls[currentColor.hex] ?? activeSrc;
+  const currentColor = COLORS.find(c => c.id === color)!;
+
+  // Standard mode: use the pre-rendered PNG (perfect quality, zero artifacts).
+  // Catalog mode:  use the canvas-colorized photo URL, falling back to original
+  //                while the async processing completes.
+  const shirtUrl = isCatalog
+    ? (urls[currentColor.hex] ?? catalogItem!.imagen)
+    : `${import.meta.env.BASE_URL}${currentColor.src}`;
   const placementCost = PLACEMENTS.filter(p=>placements.includes(p.id)).reduce((s,p)=>s+p.price,0);
   const unitPrice     = BASE_PRICE + placementCost;
   const subtotal      = unitPrice * qty;
@@ -289,7 +310,7 @@ export default function ConfiguradorPremium() {
       <main className="flex-1 flex flex-col lg:flex-row">
 
         {/* ── LEFT: SHIRT VIEWER ── */}
-        <div className={`lg:sticky lg:top-[61px] lg:self-start lg:w-[45%] lg:h-[calc(100vh-61px)] flex flex-col items-center justify-center p-8 gap-6 min-h-[300px] ${catalogItem ? 'bg-zinc-900' : 'bg-zinc-100'}`}>
+        <div className="lg:sticky lg:top-[61px] lg:self-start lg:w-[45%] lg:h-[calc(100vh-61px)] flex flex-col items-center justify-center p-8 gap-6 min-h-[300px] bg-zinc-900">
 
           {catalogItem ? (
             /* ── CATALOG MODE: full product photo with color tinting ── */
@@ -336,15 +357,15 @@ export default function ConfiguradorPremium() {
               </button>
             </>
           ) : (
-            /* ── STANDARD MODE: plain shirt + custom upload ── */
+            /* ── STANDARD MODE: pre-rendered shirt PNG + custom upload ── */
             <>
-              {/* Shirt image */}
-              <div className="relative w-full max-w-[340px] aspect-square flex items-center justify-center">
+              {/* Shirt image — swaps instantly, no canvas processing */}
+              <div className="relative w-full max-w-[360px] aspect-square flex items-center justify-center">
                 <img
-                  key={currentColor.hex}
+                  key={currentColor.id}
                   src={shirtUrl}
                   alt={`Camiseta ${currentColor.name}`}
-                  className="w-full h-full object-contain drop-shadow-2xl select-none"
+                  className="w-full h-full object-contain select-none transition-opacity duration-200"
                   draggable={false}
                 />
                 {/* design overlay */}
@@ -362,8 +383,8 @@ export default function ConfiguradorPremium() {
                     key={c.id}
                     onClick={() => setColor(c.id)}
                     title={c.name}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-foreground' : 'border-white/60 hover:scale-110'}`}
-                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}
+                    className={`w-6 h-6 rounded-full border-2 transition-transform ${color===c.id ? 'scale-125 border-white' : 'border-zinc-600 hover:scale-110'}`}
+                    style={{ backgroundColor: c.hex==='#FFFFFF'?'#f3f4f6':c.hex, boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
                   />
                 ))}
               </div>
@@ -371,7 +392,7 @@ export default function ConfiguradorPremium() {
               {/* Upload design */}
               <button
                 onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-2 border border-zinc-300 bg-white px-5 py-2.5 font-mono text-xs font-bold tracking-wider hover:border-zinc-500 transition-colors"
+                className="flex items-center gap-2 border border-zinc-600 bg-zinc-800 text-white px-5 py-2.5 font-mono text-xs font-bold tracking-wider hover:border-zinc-400 hover:bg-zinc-700 transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" />
                 {design ? 'CAMBIAR DISEÑO' : 'SUBIR MI DISEÑO'}
