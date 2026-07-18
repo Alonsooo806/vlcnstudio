@@ -27,7 +27,7 @@ const CATALOGO_DEPORTE: Producto[] = [
   { id: 'd1', titulo: 'Erling Haaland',             precio: 15000, stock: true,  stockQty: 8,  placeholderBg: '#052e16', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784385177/ChatGPT_Image_17_jul_2026_09_38_44_p_tjdjaw.jpg', tag: 'NUEVO' },
   { id: 'd2', titulo: 'Neymar Jr.',                precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#0c1a3a', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784384778/ChatGPT_Image_17_jul_2026_09_45_01_p.m_z1tfkz.png', tag: 'TOP' },
   { id: 'd3', titulo: 'Kylian Mbappé',             precio: 15000, stock: true,  stockQty: 3,  placeholderBg: '#1a0a00', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784384778/ChatGPT_Image_17_jul_2026_09_41_32_p.m_bau5u5.png' },
-  { id: 'd4', titulo: 'Michael Jordan — Bulls 23', precio: 15000, stock: true,  stockQty: 6,  placeholderBg: '#1a0000', placeholderEmoji: '🏀', tag: 'TOP' },
+  { id: 'd4', titulo: 'Lamine Yamal',               precio: 15000, stock: true,  stockQty: 6,  placeholderBg: '#1a0000', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784388046/ChatGPT_Image_18_jul_2026_11_20_29_a.m_q8y1xz.png', tag: 'TOP' },
   { id: 'd5', titulo: 'Neymar Jr — NJR',           precio: 15000, stock: false,              placeholderBg: '#0f1f0f', placeholderEmoji: '⚡' },
   { id: 'd6', titulo: 'UFC — Fight Night',         precio: 15000, stock: true,  stockQty: 4,  placeholderBg: '#1a1a00', placeholderEmoji: '🥊' },
   { id: 'd7', titulo: 'Selección Chilena — La Roja', precio: 15000, stock: true, stockQty: 10, placeholderBg: '#2d0000', placeholderEmoji: '🇨🇱', tag: 'POPULAR' },
