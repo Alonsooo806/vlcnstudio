@@ -36,9 +36,9 @@ const CATALOGO_DEPORTE: Producto[] = [
 
 const CATALOGO_ARTISTAS: Producto[] = [
   { id: 'a1', titulo: 'Billie Eilish — Happier Than Ever', precio: 15000, stock: true, stockQty: 7, placeholderBg: '#1a0033', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784044291/davinci__img1_ahora_usando_un_modelo_de_referencia_sobre_u_rzpo85.png', tag: 'TOP' },
-  { id: 'a2', titulo: 'The Weeknd',                   precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#1a0008', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784043224/ChatGPT_Image_14_jul_2026_11_32_37_a.m_eev1or.png', tag: 'POPULAR' },
-  { id: 'a3', titulo: 'Sabrina Carpenter',             precio: 15000, stock: true,  stockQty: 4,  placeholderBg: '#1a0d00', placeholderEmoji: '🎤', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784217377/ChatGPT_Image_16_jul_2026_11_55_54_a.m_m8dwcc.png' },
-  { id: 'a4', titulo: 'Kendrick Lamar',                precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#000d1a', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784232478/ChatGPT_Image_16_jul_2026_04_07_42_p.m_doijps.png' },
+  { id: 'a2', titulo: 'The Weeknd',                   precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#1a0008', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784384778/ChatGPT_Image_17_jul_2026_09_50_54_p.m_rzeqbr.png', tag: 'POPULAR' },
+  { id: 'a3', titulo: 'Sabrina Carpenter',             precio: 15000, stock: true,  stockQty: 4,  placeholderBg: '#1a0d00', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784384779/ChatGPT_Image_17_jul_2026_09_30_55_p.m_gu4ywu.png' },
+  { id: 'a4', titulo: 'Kendrick Lamar',                precio: 15000, stock: true,  stockQty: 5,  placeholderBg: '#000d1a', imagen: 'https://res.cloudinary.com/sldw6h5x/image/upload/v1784384781/ChatGPT_Image_17_jul_2026_09_46_41_p.m_hzweru.png' },
   { id: 'a5', titulo: 'Rosalía — Motomami',           precio: 15000, stock: true,  stockQty: 3,  placeholderBg: '#1a001a', placeholderEmoji: '🌹', tag: 'NUEVO' },
   { id: 'a6', titulo: 'Kendrick Lamar — DAMN.',       precio: 15000, stock: true,  stockQty: 6,  placeholderBg: '#0d1a00', placeholderEmoji: '🎵' },
   { id: 'a7', titulo: 'Ozuna — Nibiru',               precio: 15000, stock: true,  stockQty: 8,  placeholderBg: '#1a1000', placeholderEmoji: '🌙' },
