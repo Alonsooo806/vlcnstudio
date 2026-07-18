@@ -4,15 +4,11 @@ export const modules: ModuleMap = {
   "./components/mockups/vlcn-studio/Categorias.tsx": () => import("../components/mockups/vlcn-studio/Categorias.tsx"),
   "./components/mockups/vlcn-studio/ConfiguradorPremium.tsx": () => import("../components/mockups/vlcn-studio/ConfiguradorPremium.tsx"),
   "./components/mockups/vlcn-studio/CuidadoProducto.tsx": () => import("../components/mockups/vlcn-studio/CuidadoProducto.tsx"),
-  "./components/mockups/vlcn-studio/EditToolbar.tsx": () => import("../components/mockups/vlcn-studio/EditToolbar.tsx"),
-  "./components/mockups/vlcn-studio/EditableImage.tsx": () => import("../components/mockups/vlcn-studio/EditableImage.tsx"),
-  "./components/mockups/vlcn-studio/EditableText.tsx": () => import("../components/mockups/vlcn-studio/EditableText.tsx"),
   "./components/mockups/vlcn-studio/Footer.tsx": () => import("../components/mockups/vlcn-studio/Footer.tsx"),
   "./components/mockups/vlcn-studio/Inicio.tsx": () => import("../components/mockups/vlcn-studio/Inicio.tsx"),
   "./components/mockups/vlcn-studio/PreguntasRespuestas.tsx": () => import("../components/mockups/vlcn-studio/PreguntasRespuestas.tsx"),
   "./components/mockups/vlcn-studio/QuienesSomos.tsx": () => import("../components/mockups/vlcn-studio/QuienesSomos.tsx"),
   "./components/mockups/vlcn-studio/SubCatalogo.tsx": () => import("../components/mockups/vlcn-studio/SubCatalogo.tsx"),
   "./components/mockups/vlcn-studio/TerminosCondiciones.tsx": () => import("../components/mockups/vlcn-studio/TerminosCondiciones.tsx"),
-  "./components/mockups/vlcn-studio/WhatsAppButton.tsx": () => import("../components/mockups/vlcn-studio/WhatsAppButton.tsx"),
-  "./components/mockups/vlcn-studio/editContext.tsx": () => import("../components/mockups/vlcn-studio/editContext.tsx")
+  "./components/mockups/vlcn-studio/WhatsAppButton.tsx": () => import("../components/mockups/vlcn-studio/WhatsAppButton.tsx")
 };
